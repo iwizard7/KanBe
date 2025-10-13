@@ -52,7 +52,7 @@ else
     fi
 
     # Проверка после первой попытки
-    if command -v node &> /dev/null && command -v npm &> /dev/null; then
+    if command -v node &> /dev/null && command -v npm &> /dev/null && node --version &> /dev/null && npm --version &> /dev/null; then
         echo "Node.js версия: $(node --version)"
         echo "NPM версия: $(npm --version)"
     else
@@ -69,7 +69,7 @@ else
         fi
 
         # Проверка после второй попытки
-        if command -v node &> /dev/null && command -v npm &> /dev/null; then
+        if command -v node &> /dev/null && command -v npm &> /dev/null && node --version &> /dev/null && npm --version &> /dev/null; then
             echo "Node.js версия: $(node --version)"
             echo "NPM версия: $(npm --version)"
         else
@@ -98,7 +98,7 @@ else
                     echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc
                 fi
 
-                if command -v node &> /dev/null && command -v npm &> /dev/null; then
+                if command -v node &> /dev/null && command -v npm &> /dev/null && node --version &> /dev/null && npm --version &> /dev/null; then
                     echo "Node.js успешно установлен вручную"
                     echo "Node.js версия: $(node --version)"
                     echo "NPM версия: $(npm --version)"
