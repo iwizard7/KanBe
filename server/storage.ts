@@ -9,14 +9,15 @@ import {
   type UpdateTask,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
-  // User operations (mandatory for Replit Auth)
+  // User operations
   getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
-  
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: { email: string; password: string; firstName?: string; lastName?: string }): Promise<User>;
+
   // Task operations
   getTasks(userId: string): Promise<Task[]>;
   getTask(id: string, userId: string): Promise<Task | undefined>;
@@ -27,22 +28,25 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations (mandatory for Replit Auth)
+  // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(userData: { email: string; password: string; firstName?: string; lastName?: string }): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
+      .values({
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
       })
       .returning();
     return user;
@@ -97,7 +101,7 @@ export class DatabaseStorage implements IStorage {
       .update(tasks)
       .set({
         ...updateData,
-        updatedAt: new Date(),
+        updatedAt: sql`(strftime('%s', 'now'))`,
       })
       .where(eq(tasks.id, id))
       .returning();
@@ -121,7 +125,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         status,
         position,
-        updatedAt: new Date(),
+        updatedAt: sql`(strftime('%s', 'now'))`,
       })
       .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
       .returning();

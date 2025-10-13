@@ -4,48 +4,47 @@ import { relations } from 'drizzle-orm';
 import {
   index,
   integer,
-  jsonb,
-  pgTable,
   text,
-  timestamp,
-  varchar,
-} from "drizzle-orm/pg-core";
+  sqliteTable,
+  real,
+} from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table (mandatory for Replit Auth)
-export const sessions = pgTable(
+// Session storage table
+export const sessions = sqliteTable(
   "sessions",
   {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
+    sid: text("sid").primaryKey(),
+    sess: text("sess").notNull(),
+    expire: real("expire").notNull(),
   },
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table (mandatory for Replit Auth)
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+// User storage table
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
+  email: text("email").unique(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImageUrl: text("profile_image_url"),
+  password: text("password"), // for local auth
+  createdAt: real("created_at").default(sql`(strftime('%s', 'now'))`),
+  updatedAt: real("updated_at").default(sql`(strftime('%s', 'now'))`),
 });
 
 // Tasks table for kanban board
-export const tasks = pgTable("tasks", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+export const tasks = sqliteTable("tasks", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   title: text("title").notNull(),
   description: text("description").default(''),
-  status: varchar("status", { length: 50 }).notNull().default('todo'), // 'todo', 'in-progress', 'done'
+  status: text("status").notNull().default('todo'), // 'todo', 'in-progress', 'done'
   position: integer("position").notNull().default(0), // for ordering within column
-  tags: text("tags").array().default(sql`ARRAY[]::text[]`), // array of tag names with colors
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  tags: text("tags").default('[]'), // JSON string for array
+  createdAt: real("created_at").default(sql`(strftime('%s', 'now'))`).notNull(),
+  updatedAt: real("updated_at").default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // Relations

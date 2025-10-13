@@ -22,16 +22,16 @@ export default function Landing() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="min-w-[200px]"
-                onClick={() => window.location.href = '/api/login'}
+                onClick={() => window.location.href = '/login'}
                 data-testid="button-login"
               >
                 Войти
               </Button>
               <p className="text-sm text-muted-foreground">
-                Вход через Google, GitHub или Email
+                Вход через Email и пароль
               </p>
             </div>
           </div>
@@ -83,9 +83,9 @@ export default function Landing() {
           <p className="text-muted-foreground max-w-xl mx-auto">
             Войдите, чтобы создать свою первую доску и начать управлять задачами эффективно
           </p>
-          <Button 
+          <Button
             size="lg"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => window.location.href = '/login'}
             data-testid="button-login-cta"
           >
             Войти в Приложение
