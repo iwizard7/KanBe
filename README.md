@@ -12,6 +12,12 @@
 
 ## Быстрая установка
 
+### Вариант 1: Полностью автоматическая установка
+```bash
+curl -fsSL https://raw.githubusercontent.com/iwizard7/KanBe/main/install-online.sh | sudo bash
+```
+
+### Вариант 2: Ручная установка
 1. **Скачайте проект:**
    ```bash
    git clone https://github.com/iwizard7/KanBe.git
