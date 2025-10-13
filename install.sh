@@ -196,50 +196,80 @@ echo ""
 # Обновление системы
 echo "Обновление системы..."
 
-# Предварительная очистка для освобождения места
+# Комплексная подготовка места для обновления
 echo "Подготовка места для обновления..."
 sudo_exec "apt-get clean" || true
 sudo_exec "apt-get autoclean" || true
+
+# Агрессивная очистка системных кэшей
+echo "Агрессивная очистка системных кэшей..."
 sudo_exec "rm -rf /var/lib/apt/lists/*" || true
+sudo_exec "find /var/cache -type f -delete" || true
+sudo_exec "find /var/log -name '*.log' -type f -exec truncate -s 0 {} +" || true
 
-# Попытка обновления с обработкой ошибок места
-if ! sudo_exec "apt-get update"; then
-    echo "Ошибка обновления системы. Попытка очистки и повтор..."
+# Создание чистой директории для списков пакетов
+echo "Подготовка директории для списков пакетов..."
+sudo_exec "mkdir -p /var/lib/apt/lists/partial" || true
 
-    # Агрессивная очистка
-    echo "Агрессивная очистка кэшей..."
-    sudo_exec "find /var/cache -type f -delete" || true
-    sudo_exec "find /var/log -name '*.log' -type f -exec truncate -s 0 {} +" || true
+# Попытка обновления с различными стратегиями
+UPDATE_ATTEMPTS=3
+for ((i=1; i<=UPDATE_ATTEMPTS; i++)); do
+    echo "Попытка обновления $i из $UPDATE_ATTEMPTS..."
 
-    # Удаление старых пакетов
-    sudo_exec "apt-get autoremove -y" || true
-    sudo_exec "apt-get clean" || true
+    if sudo_exec "apt-get update"; then
+        echo "Обновление системы выполнено успешно"
+        break
+    else
+        echo "Ошибка обновления на попытке $i"
 
-    # Повторная попытка обновления
-    if ! sudo_exec "apt-get update"; then
-        echo "Критическая ошибка: не удается обновить систему из-за нехватки места"
-        echo ""
-        echo "🔧 Рекомендации по освобождению места:"
-        echo ""
-        echo "1. Очистите все кэши:"
-        echo "   sudo apt-get clean && sudo apt-get autoclean"
-        echo "   sudo rm -rf /var/lib/apt/lists/*"
-        echo ""
-        echo "2. Удалите ненужные пакеты:"
-        echo "   sudo apt-get autoremove -y"
-        echo ""
-        echo "3. Очистите логи:"
-        echo "   sudo find /var/log -name '*.log' -exec truncate -s 0 {} +"
-        echo ""
-        echo "4. Увеличьте размер раздела:"
-        echo "   sudo raspi-config (Advanced Options -> Expand Filesystem)"
-        echo ""
-        echo "5. Если ничего не помогает, попробуйте без обновления:"
-        echo "   sudo apt-get update --allow-unauthenticated"
-        echo ""
-        exit 1
+        if [ $i -eq $UPDATE_ATTEMPTS ]; then
+            echo ""
+            echo "❌ Критическая ошибка: не удается обновить систему"
+            echo ""
+            echo "🔧 Возможные причины и решения:"
+            echo ""
+            echo "1. Повреждены списки пакетов (самая вероятная причина):"
+            echo "   sudo rm -rf /var/lib/apt/lists/*"
+            echo "   sudo mkdir -p /var/lib/apt/lists/partial"
+            echo "   sudo apt-get update"
+            echo ""
+            echo "2. Недостаточно места в системных директориях:"
+            echo "   sudo find /var/cache -type f -delete"
+            echo "   sudo find /var/log -name '*.log' -exec truncate -s 0 {} +"
+            echo ""
+            echo "3. Проблемы с файловой системой:"
+            echo "   sudo touch /forcefsck"
+            echo "   sudo reboot"
+            echo ""
+            echo "4. Обновление без проверки подписей:"
+            echo "   sudo apt-get update --allow-unauthenticated"
+            echo ""
+            echo "5. Обновление конкретных источников:"
+            echo "   sudo apt-get update -o Acquire::Check-Valid-Until=false"
+            echo ""
+            echo "🚨 Рекомендуемая команда для исправления:"
+            echo "sudo rm -rf /var/lib/apt/lists/* && sudo apt-get update --allow-unauthenticated"
+            echo ""
+            read -p "Попробовать обновить без проверки подписей? (y/n): " FORCE_UPDATE
+            if [[ $FORCE_UPDATE =~ ^[Yy]$ ]]; then
+                echo "Попытка обновления без проверки подписей..."
+                if sudo_exec "apt-get update --allow-unauthenticated"; then
+                    echo "Обновление выполнено без проверки подписей"
+                    break
+                fi
+            fi
+
+            echo "Пропуск обновления системы из-за критических ошибок"
+            break
+        fi
+
+        # Очистка между попытками
+        echo "Очистка перед следующей попыткой..."
+        sudo_exec "rm -rf /var/lib/apt/lists/*" || true
+        sudo_exec "find /var/cache -type f -delete" || true
+        sleep 2
     fi
-fi
+done
 
 # Обновление пакетов (опционально)
 read -p "Обновить все пакеты системы? (y/n): " UPDATE_PACKAGES

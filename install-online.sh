@@ -98,11 +98,21 @@ if ! cd "$TEMP_DIR"; then
 fi
 print_success "Рабочая директория установлена"
 
-# Предварительная очистка для освобождения места
+# Комплексная подготовка места для скачивания
 print_step "Подготовка места для скачивания..."
-echo -e "${CYAN}🧹 Очистка кэшей перед скачиванием...${NC}"
+echo -e "${CYAN}🧹 Агрессивная очистка системных кэшей...${NC}"
+
+# Очистка различных кэшей
 sudo find /var/cache -type f -delete 2>/dev/null || true
 sudo find /var/log -name '*.log' -type f -exec truncate -s 0 {} + 2>/dev/null || true
+sudo rm -rf /var/lib/apt/lists/* 2>/dev/null || true
+sudo mkdir -p /var/lib/apt/lists/partial 2>/dev/null || true
+
+# Очистка временных файлов в постоянном хранилище
+sudo find /var/tmp -type f -mtime +1 -delete 2>/dev/null || true
+sudo find /var/tmp -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+
+echo -e "${GREEN}✅ Очистка завершена${NC}"
 
 # Скачивание скрипта установки с повторными попытками
 print_step "Скачивание скрипта установки..."
