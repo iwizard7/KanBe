@@ -19,23 +19,27 @@ fi
 TEMP_DIR=$(mktemp -d)
 echo "Создание временной директории: $TEMP_DIR"
 
+# Переход в временную директорию
+cd "$TEMP_DIR"
+
 # Скачивание скрипта установки
 echo "Скачивание скрипта установки..."
-if curl -fsSL -o "$TEMP_DIR/install.sh" https://raw.githubusercontent.com/iwizard7/KanBe/main/install.sh; then
+if curl -fsSL -o "install.sh" https://raw.githubusercontent.com/iwizard7/KanBe/main/install.sh; then
     echo "Скрипт установки успешно скачан"
 else
     echo "Ошибка скачивания скрипта установки"
+    cd /
     rm -rf "$TEMP_DIR"
     exit 1
 fi
 
 # Установка прав на выполнение
-chmod +x "$TEMP_DIR/install.sh"
+chmod +x install.sh
 
 # Запуск скрипта установки
 echo "Запуск установки..."
-cd "$TEMP_DIR"
 exec bash install.sh
 
 # Очистка (не выполнится из-за exec)
+cd /
 rm -rf "$TEMP_DIR"
