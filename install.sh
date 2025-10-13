@@ -210,10 +210,41 @@ fi
 
 # Установка зависимостей проекта
 echo "Установка зависимостей проекта..."
-if ! safe_exec "npm install"; then
-    echo "Ошибка установки зависимостей"
-    exit 1
-fi
+MAX_NPM_ATTEMPTS=3
+for ((attempt=1; attempt<=MAX_NPM_ATTEMPTS; attempt++)); do
+    echo "Попытка $attempt из $MAX_NPM_ATTEMPTS..."
+    if safe_exec "npm install --no-audit --no-fund --timeout=60000"; then
+        echo "Зависимости успешно установлены"
+        break
+    else
+        echo "Ошибка установки зависимостей на попытке $attempt"
+        if [ $attempt -eq $MAX_NPM_ATTEMPTS ]; then
+            echo "Не удалось установить зависимости после $MAX_NPM_ATTEMPTS попыток"
+            echo ""
+            echo "Возможные решения:"
+            echo "1. Проверьте подключение к интернету"
+            echo "2. Настройте прокси: npm config set proxy http://your-proxy:port"
+            echo "3. Увеличьте таймаут: npm config set fetch-timeout 60000"
+            echo "4. Используйте другой registry: npm config set registry https://registry.npmjs.org/"
+            echo "5. Очистите кэш: npm cache clean --force"
+            echo ""
+            echo "Попробуйте выполнить команды вручную:"
+            echo "npm config set fetch-timeout 60000"
+            echo "npm config set fetch-retry-mintimeout 20000"
+            echo "npm config set fetch-retry-maxtimeout 120000"
+            echo "npm install"
+            exit 1
+        fi
+        echo "Повторная попытка через 5 секунд..."
+        sleep 5
+
+        # Очистка npm кэша перед следующей попыткой
+        if [ $attempt -lt $MAX_NPM_ATTEMPTS ]; then
+            echo "Очистка npm кэша..."
+            npm cache clean --force 2>/dev/null || true
+        fi
+    fi
+done
 
 # Сборка better-sqlite3 для ARM
 echo "Сборка better-sqlite3 для ARM архитектуры..."
