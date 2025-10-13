@@ -22,22 +22,26 @@ echo "Создание временной директории: $TEMP_DIR"
 
 # Функция очистки при выходе
 cleanup() {
-    cd /
-    rm -rf "$TEMP_DIR"
+    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
+        rm -rf "$TEMP_DIR"
+    fi
 }
 trap cleanup EXIT
 
 # Переход в временную директорию
-cd "$TEMP_DIR" || exit 1
+if ! cd "$TEMP_DIR"; then
+    echo "Ошибка: не удалось перейти в директорию $TEMP_DIR"
+    exit 1
+fi
 
 # Скачивание скрипта установки
 echo "Скачивание скрипта установки..."
-if curl -fsSL -o "install.sh" https://raw.githubusercontent.com/iwizard7/KanBe/main/install.sh; then
-    echo "Скрипт установки успешно скачан"
-else
+if ! curl -fsSL -o "install.sh" https://raw.githubusercontent.com/iwizard7/KanBe/main/install.sh; then
     echo "Ошибка скачивания скрипта установки"
     exit 1
 fi
+
+echo "Скрипт установки успешно скачан"
 
 # Установка прав на выполнение
 chmod +x install.sh
