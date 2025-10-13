@@ -210,37 +210,84 @@ fi
 
 # Установка зависимостей проекта
 echo "Установка зависимостей проекта..."
-MAX_NPM_ATTEMPTS=3
+MAX_NPM_ATTEMPTS=4
 for ((attempt=1; attempt<=MAX_NPM_ATTEMPTS; attempt++)); do
     echo "Попытка $attempt из $MAX_NPM_ATTEMPTS..."
-    if safe_exec "npm install --no-audit --no-fund --timeout=60000"; then
+
+    # Разные стратегии установки для разных попыток
+    case $attempt in
+        1)
+            echo "Стратегия 1: Стандартная установка..."
+            INSTALL_CMD="npm install --no-audit --no-fund --timeout=60000"
+            ;;
+        2)
+            echo "Стратегия 2: С флагом legacy-peer-deps..."
+            INSTALL_CMD="npm install --no-audit --no-fund --timeout=60000 --legacy-peer-deps"
+            ;;
+        3)
+            echo "Стратегия 3: Принудительная установка проблемных пакетов..."
+            INSTALL_CMD="npm install --no-audit --no-fund --timeout=60000 --force"
+            ;;
+        4)
+            echo "Стратегия 4: Установка без проблемных пакетов сначала..."
+            # Сначала устанавливаем все кроме bcrypt
+            safe_exec "npm install --no-audit --no-fund --timeout=60000 --legacy-peer-deps" || true
+            # Затем устанавливаем bcrypt отдельно
+            INSTALL_CMD="npm install bcrypt --no-audit --no-fund --timeout=60000 --build-from-source"
+            ;;
+    esac
+
+    if safe_exec "$INSTALL_CMD"; then
         echo "Зависимости успешно установлены"
         break
     else
-        echo "Ошибка установки зависимостей на попытке $attempt"
+        echo "Ошибка установки зависимостей на попытке $attempt (стратегия $attempt)"
         if [ $attempt -eq $MAX_NPM_ATTEMPTS ]; then
-            echo "Не удалось установить зависимости после $MAX_NPM_ATTEMPTS попыток"
             echo ""
-            echo "Возможные решения:"
-            echo "1. Проверьте подключение к интернету"
-            echo "2. Настройте прокси: npm config set proxy http://your-proxy:port"
-            echo "3. Увеличьте таймаут: npm config set fetch-timeout 60000"
-            echo "4. Используйте другой registry: npm config set registry https://registry.npmjs.org/"
-            echo "5. Очистите кэш: npm cache clean --force"
+            echo "❌ Не удалось установить зависимости после $MAX_NPM_ATTEMPTS попыток"
             echo ""
-            echo "Попробуйте выполнить команды вручную:"
-            echo "npm config set fetch-timeout 60000"
-            echo "npm config set fetch-retry-mintimeout 20000"
-            echo "npm config set fetch-retry-maxtimeout 120000"
-            echo "npm install"
+            echo "🔧 Возможные решения проблемы с bcrypt:"
+            echo ""
+            echo "Вариант 1 - Обновить npm и node:"
+            echo "  npm install -g npm@latest"
+            echo "  sudo apt-get update && sudo apt-get upgrade nodejs"
+            echo ""
+            echo "Вариант 2 - Установить bcrypt отдельно:"
+            echo "  npm uninstall bcrypt"
+            echo "  npm install bcryptjs"
+            echo ""
+            echo "Вариант 3 - Использовать yarn вместо npm:"
+            echo "  npm install -g yarn"
+            echo "  yarn install"
+            echo ""
+            echo "Вариант 4 - Собрать нативные модули вручную:"
+            echo "  sudo apt-get install build-essential python3-dev"
+            echo "  npm install --build-from-source"
+            echo ""
+            echo "Вариант 5 - Использовать Docker контейнер:"
+            echo "  docker run -it node:18 bash"
+            echo ""
+            echo "🚨 Рекомендуемая команда для ручного исправления:"
+            echo "npm config set python python3"
+            echo "npm install bcrypt --build-from-source --no-optional"
             exit 1
         fi
-        echo "Повторная попытка через 5 секунд..."
-        sleep 5
+
+        # Специальная обработка для попытки 4
+        if [ $attempt -eq 3 ]; then
+            echo "⏳ Подготовка к финальной попытке..."
+            echo "Очистка node_modules и package-lock.json..."
+            rm -rf node_modules package-lock.json 2>/dev/null || true
+            echo "Повторная попытка через 3 секунды..."
+            sleep 3
+        else
+            echo "Повторная попытка через 5 секунд..."
+            sleep 5
+        fi
 
         # Очистка npm кэша перед следующей попыткой
         if [ $attempt -lt $MAX_NPM_ATTEMPTS ]; then
-            echo "Очистка npm кэша..."
+            echo "🧹 Очистка npm кэша..."
             npm cache clean --force 2>/dev/null || true
         fi
     fi
