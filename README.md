@@ -14,7 +14,7 @@
 
 1. **Скачайте проект:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/iwizard7/KanBe.git
    cd kanbe
    ```
 
