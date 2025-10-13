@@ -1,90 +1,143 @@
 #!/bin/bash
 
-# Онлайн-установщик KanBe для Raspberry Pi
-# Этот скрипт скачивает и запускает основной скрипт установки
+# 🎯 Онлайн-установщик KanBe для Raspberry Pi
+# 📥 Этот скрипт скачивает и запускает основной скрипт установки
 
-echo "=== Онлайн-установщик KanBe ==="
-echo ""
+# Цвета для красивого вывода
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Функция для красивого вывода
+print_step() {
+    echo -e "${BLUE}🔄 [ШАГ] $1${NC}"
+}
+
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+print_info() {
+    echo -e "${CYAN}ℹ️  $1${NC}"
+}
+
+print_header() {
+    echo -e "${PURPLE}🎯 === Онлайн-установщик KanBe ===${NC}"
+    echo ""
+}
+
+print_footer() {
+    echo ""
+    echo -e "${GREEN}🚀 Установка завершена! Добро пожаловать в KanBe!${NC}"
+}
 
 # Проверка ОС
+print_header
+
+print_step "Проверка операционной системы..."
 if [[ "$OSTYPE" != "linux-gnu"* ]]; then
-    echo "Этот скрипт предназначен для Linux (Debian на Raspberry Pi)"
+    print_error "Этот скрипт предназначен для Linux (Debian на Raspberry Pi)"
     echo "Текущая ОС: $OSTYPE"
     exit 1
 fi
+print_success "Операционная система проверена"
 
 # Сохранение текущей директории
 ORIGINAL_DIR="$(pwd)"
-echo "Исходная директория: $ORIGINAL_DIR"
+print_info "Исходная директория: $ORIGINAL_DIR"
 
 # Создание временной директории для установки
+print_step "Создание временной директории..."
 TEMP_DIR=$(mktemp -d)
-echo "Создание временной директории: $TEMP_DIR"
+if [ -z "$TEMP_DIR" ] || [ ! -d "$TEMP_DIR" ]; then
+    print_error "Не удалось создать временную директорию"
+    exit 1
+fi
+print_success "Временная директория создана: $TEMP_DIR"
 
 # Функция очистки при выходе
 cleanup() {
     if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
-        echo "Очистка временной директории: $TEMP_DIR"
+        print_info "Очистка временной директории..."
         rm -rf "$TEMP_DIR" 2>/dev/null || true
     fi
 }
 trap cleanup EXIT
 
 # Переход в временную директорию
-echo "Переход в временную директорию..."
+print_step "Переход в рабочую директорию..."
 if ! cd "$TEMP_DIR"; then
-    echo "Ошибка: не удалось перейти в директорию $TEMP_DIR"
+    print_error "Не удалось перейти в директорию $TEMP_DIR"
     exit 1
 fi
-
-# Проверка существования временной директории
-if [ ! -d "$TEMP_DIR" ]; then
-    echo "Ошибка: временная директория не существует"
-    exit 1
-fi
+print_success "Рабочая директория установлена"
 
 # Скачивание скрипта установки с повторными попытками
-echo "Скачивание скрипта установки..."
+print_step "Скачивание скрипта установки..."
 MAX_ATTEMPTS=3
 for ((i=1; i<=MAX_ATTEMPTS; i++)); do
-    echo "Попытка $i из $MAX_ATTEMPTS..."
+    echo -e "📥 Попытка $i из $MAX_ATTEMPTS..."
     if curl -fsSL --connect-timeout 30 --max-time 300 -o "install.sh" "https://raw.githubusercontent.com/iwizard7/KanBe/main/install.sh"; then
-        echo "Скрипт установки успешно скачан"
+        print_success "Скрипт установки успешно скачан"
         break
     else
-        echo "Ошибка скачивания на попытке $i"
+        print_warning "Ошибка скачивания на попытке $i"
         if [ $i -eq $MAX_ATTEMPTS ]; then
-            echo "Не удалось скачать скрипт после $MAX_ATTEMPTS попыток"
+            print_error "Не удалось скачать скрипт после $MAX_ATTEMPTS попыток"
             exit 1
         fi
+        echo "⏳ Повторная попытка через 2 секунды..."
         sleep 2
     fi
 done
 
 # Проверка существования файла
 if [ ! -f "install.sh" ]; then
-    echo "Ошибка: файл install.sh не найден после скачивания"
+    print_error "Файл install.sh не найден после скачивания"
     exit 1
 fi
 
 # Проверка размера файла
 if [ ! -s "install.sh" ]; then
-    echo "Ошибка: скачанный файл install.sh пустой"
+    print_error "Скачанный файл install.sh пустой"
     exit 1
 fi
 
+print_success "Файл скрипта проверен"
+
 # Установка прав на выполнение
+print_step "Настройка прав доступа..."
 chmod +x install.sh
 
 # Проверка прав выполнения
 if [ ! -x "install.sh" ]; then
-    echo "Ошибка: не удалось установить права выполнения на install.sh"
+    print_error "Не удалось установить права выполнения на install.sh"
     exit 1
 fi
+print_success "Права доступа настроены"
 
-echo "Запуск скрипта установки..."
-echo "Текущая директория: $(pwd)"
-echo "Файл скрипта: $(ls -la install.sh)"
+# Финальная информация перед запуском
+echo ""
+echo -e "${CYAN}📋 Информация о запуске:${NC}"
+echo "   Текущая директория: $(pwd)"
+echo "   Файл скрипта: $(ls -la install.sh)"
+echo ""
+
+print_step "Запуск основного скрипта установки..."
+echo -e "${GREEN}🎯 KanBe будет установлен автоматически!${NC}"
+echo ""
 
 # Запуск скрипта установки с сохранением переменных окружения
 exec bash install.sh
