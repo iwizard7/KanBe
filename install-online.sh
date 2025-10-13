@@ -3,7 +3,8 @@
 # Онлайн-установщик KanBe для Raspberry Pi
 # Этот скрипт скачивает и запускает основной скрипт установки
 
-set -e
+# Отключение строгого режима для pipe
+set +e
 
 echo "=== Онлайн-установщик KanBe ==="
 echo ""
@@ -19,8 +20,15 @@ fi
 TEMP_DIR=$(mktemp -d)
 echo "Создание временной директории: $TEMP_DIR"
 
+# Функция очистки при выходе
+cleanup() {
+    cd /
+    rm -rf "$TEMP_DIR"
+}
+trap cleanup EXIT
+
 # Переход в временную директорию
-cd "$TEMP_DIR"
+cd "$TEMP_DIR" || exit 1
 
 # Скачивание скрипта установки
 echo "Скачивание скрипта установки..."
@@ -28,8 +36,6 @@ if curl -fsSL -o "install.sh" https://raw.githubusercontent.com/iwizard7/KanBe/m
     echo "Скрипт установки успешно скачан"
 else
     echo "Ошибка скачивания скрипта установки"
-    cd /
-    rm -rf "$TEMP_DIR"
     exit 1
 fi
 
@@ -39,7 +45,3 @@ chmod +x install.sh
 # Запуск скрипта установки
 echo "Запуск установки..."
 exec bash install.sh
-
-# Очистка (не выполнится из-за exec)
-cd /
-rm -rf "$TEMP_DIR"
