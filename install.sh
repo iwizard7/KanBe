@@ -43,6 +43,56 @@ if [[ "$ARCH" != "armv7l" && "$ARCH" != "aarch64" ]]; then
     echo "Текущая архитектура: $ARCH"
 fi
 
+# Запрос директории установки
+echo ""
+echo "=== Выбор директории установки ==="
+echo "📁 Текущая директория: $(pwd)"
+echo ""
+read -p "Установить KanBe в текущую директорию? (y/n): " USE_CURRENT_DIR
+
+if [[ $USE_CURRENT_DIR =~ ^[Nn]$ ]]; then
+    read -p "Введите путь для установки KanBe: " INSTALL_DIR
+
+    # Проверка существования директории
+    if [ ! -d "$INSTALL_DIR" ]; then
+        echo "Директория $INSTALL_DIR не существует."
+        read -p "Создать директорию? (y/n): " CREATE_DIR
+        if [[ $CREATE_DIR =~ ^[Yy]$ ]]; then
+            if ! mkdir -p "$INSTALL_DIR"; then
+                echo "Ошибка создания директории $INSTALL_DIR"
+                exit 1
+            fi
+            echo "Директория $INSTALL_DIR создана"
+        else
+            echo "Установка отменена"
+            exit 1
+        fi
+    fi
+
+    # Проверка прав записи в директорию
+    if [ ! -w "$INSTALL_DIR" ]; then
+        echo "Ошибка: нет прав записи в директорию $INSTALL_DIR"
+        exit 1
+    fi
+
+    # Переход в выбранную директорию
+    if ! cd "$INSTALL_DIR"; then
+        echo "Ошибка перехода в директорию $INSTALL_DIR"
+        exit 1
+    fi
+
+    echo "✅ KanBe будет установлен в: $(pwd)"
+else
+    echo "✅ KanBe будет установлен в текущую директорию: $(pwd)"
+fi
+
+# Обновление переменных директорий
+PROJECT_DIR="$(pwd)"
+echo ""
+echo "📋 Информация об установке:"
+echo "   Директория установки: $PROJECT_DIR"
+echo ""
+
 # Обновление системы
 echo "Обновление системы..."
 if ! sudo_exec "apt update"; then
