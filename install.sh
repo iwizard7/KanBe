@@ -35,8 +35,8 @@ sudo apt install -y curl wget git build-essential python3-dev sqlite3 nginx
 echo "Установка Node.js 18..."
 
 # Проверка существующей установки
-if command -v node &> /dev/null && command -v npm &> /dev/null; then
-    echo "Node.js уже установлен:"
+if command -v node &> /dev/null && command -v npm &> /dev/null && node --version &> /dev/null && npm --version &> /dev/null; then
+    echo "Node.js уже установлен и работает корректно:"
     echo "Node.js версия: $(node --version)"
     echo "NPM версия: $(npm --version)"
 else
