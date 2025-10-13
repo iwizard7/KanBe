@@ -34,22 +34,62 @@ sudo apt install -y curl wget git build-essential python3-dev sqlite3 nginx
 # Установка Node.js 18
 echo "Установка Node.js 18..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+
+# Очистка кэша apt и повторная установка
+sudo apt-get clean
+sudo apt-get update
 sudo apt-get install -y nodejs
 
 # Проверка установки Node.js
-if command -v node &> /dev/null; then
+if command -v node &> /dev/null && command -v npm &> /dev/null; then
     echo "Node.js версия: $(node --version)"
     echo "NPM версия: $(npm --version)"
 else
-    echo "Ошибка: Node.js не установлен. Попробуем альтернативный метод..."
-    # Альтернативная установка через snap или другие методы
+    echo "Ошибка: Node.js не установлен корректно. Попробуем альтернативные методы..."
+
+    # Попытка 1: Переустановка через apt
+    echo "Попытка 1: Переустановка через apt..."
+    sudo apt-get remove --purge -y nodejs npm
+    sudo apt-get autoremove -y
     sudo apt-get install -y nodejs npm
-    if command -v node &> /dev/null; then
+
+    if command -v node &> /dev/null && command -v npm &> /dev/null; then
         echo "Node.js версия: $(node --version)"
         echo "NPM версия: $(npm --version)"
     else
-        echo "Критическая ошибка: не удалось установить Node.js"
-        exit 1
+        # Попытка 2: Установка из официального репозитория Debian
+        echo "Попытка 2: Установка из официального репозитория Debian..."
+        sudo apt-get install -y nodejs npm
+
+        if command -v node &> /dev/null && command -v npm &> /dev/null; then
+            echo "Node.js версия: $(node --version)"
+            echo "NPM версия: $(npm --version)"
+        else
+            # Попытка 3: Ручная установка
+            echo "Попытка 3: Ручная установка Node.js..."
+            NODE_VERSION="18.19.1"
+            ARCH=$(uname -m)
+            if [[ "$ARCH" == "aarch64" ]]; then
+                NODE_ARCH="arm64"
+            else
+                NODE_ARCH="armv7l"
+            fi
+
+            wget "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"
+            sudo tar -xf "node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" -C /usr/local --strip-components=1
+            rm "node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"
+
+            if command -v node &> /dev/null && command -v npm &> /dev/null; then
+                echo "Node.js версия: $(node --version)"
+                echo "NPM версия: $(npm --version)"
+            else
+                echo "Критическая ошибка: не удалось установить Node.js"
+                echo "Попробуйте установить Node.js вручную:"
+                echo "curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
+                echo "sudo apt-get install -y nodejs"
+                exit 1
+            fi
+        fi
     fi
 fi
 
