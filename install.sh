@@ -157,12 +157,15 @@ if [[ $CREATE_USER =~ ^[Yy]$ ]]; then
 fi
 
 # Проверка наличия файлов проекта
-if [ ! -f "package.json" ] || [ ! -f "install.sh" ]; then
+if [ ! -f "package.json" ]; then
     echo "Файлы проекта не найдены. Клонирование репозитория..."
-    if git clone https://github.com/iwizard7/KanBe.git temp_kanbe && mv temp_kanbe/* . && mv temp_kanbe/.* . 2>/dev/null && rm -rf temp_kanbe; then
+    if git clone https://github.com/iwizard7/KanBe.git temp_kanbe 2>/dev/null; then
+        # Перемещение файлов из temp_kanbe в текущую директорию
+        mv temp_kanbe/* . 2>/dev/null
+        mv temp_kanbe/.* . 2>/dev/null || true
+        rm -rf temp_kanbe
         echo "Репозиторий успешно клонирован"
         # Перезапуск скрипта с новыми файлами
-        echo "Перезапуск скрипта установки..."
         exec bash install.sh
     else
         echo "Ошибка клонирования репозитория"
