@@ -195,13 +195,61 @@ echo ""
 
 # Обновление системы
 echo "Обновление системы..."
-if ! sudo_exec "apt update"; then
-    echo "Ошибка обновления системы"
-    exit 1
+
+# Предварительная очистка для освобождения места
+echo "Подготовка места для обновления..."
+sudo_exec "apt-get clean" || true
+sudo_exec "apt-get autoclean" || true
+sudo_exec "rm -rf /var/lib/apt/lists/*" || true
+
+# Попытка обновления с обработкой ошибок места
+if ! sudo_exec "apt-get update"; then
+    echo "Ошибка обновления системы. Попытка очистки и повтор..."
+
+    # Агрессивная очистка
+    echo "Агрессивная очистка кэшей..."
+    sudo_exec "find /var/cache -type f -delete" || true
+    sudo_exec "find /var/log -name '*.log' -type f -exec truncate -s 0 {} +" || true
+
+    # Удаление старых пакетов
+    sudo_exec "apt-get autoremove -y" || true
+    sudo_exec "apt-get clean" || true
+
+    # Повторная попытка обновления
+    if ! sudo_exec "apt-get update"; then
+        echo "Критическая ошибка: не удается обновить систему из-за нехватки места"
+        echo ""
+        echo "🔧 Рекомендации по освобождению места:"
+        echo ""
+        echo "1. Очистите все кэши:"
+        echo "   sudo apt-get clean && sudo apt-get autoclean"
+        echo "   sudo rm -rf /var/lib/apt/lists/*"
+        echo ""
+        echo "2. Удалите ненужные пакеты:"
+        echo "   sudo apt-get autoremove -y"
+        echo ""
+        echo "3. Очистите логи:"
+        echo "   sudo find /var/log -name '*.log' -exec truncate -s 0 {} +"
+        echo ""
+        echo "4. Увеличьте размер раздела:"
+        echo "   sudo raspi-config (Advanced Options -> Expand Filesystem)"
+        echo ""
+        echo "5. Если ничего не помогает, попробуйте без обновления:"
+        echo "   sudo apt-get update --allow-unauthenticated"
+        echo ""
+        exit 1
+    fi
 fi
 
-if ! sudo_exec "apt upgrade -y"; then
-    echo "Предупреждение: не удалось обновить все пакеты"
+# Обновление пакетов (опционально)
+read -p "Обновить все пакеты системы? (y/n): " UPDATE_PACKAGES
+if [[ $UPDATE_PACKAGES =~ ^[Yy]$ ]]; then
+    echo "Обновление пакетов..."
+    if ! sudo_exec "apt-get upgrade -y"; then
+        echo "Предупреждение: не удалось обновить некоторые пакеты"
+    fi
+else
+    echo "Пропуск обновления пакетов"
 fi
 
 # Установка необходимых пакетов

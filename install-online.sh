@@ -98,6 +98,12 @@ if ! cd "$TEMP_DIR"; then
 fi
 print_success "Рабочая директория установлена"
 
+# Предварительная очистка для освобождения места
+print_step "Подготовка места для скачивания..."
+echo -e "${CYAN}🧹 Очистка кэшей перед скачиванием...${NC}"
+sudo find /var/cache -type f -delete 2>/dev/null || true
+sudo find /var/log -name '*.log' -type f -exec truncate -s 0 {} + 2>/dev/null || true
+
 # Скачивание скрипта установки с повторными попытками
 print_step "Скачивание скрипта установки..."
 MAX_ATTEMPTS=3
@@ -110,6 +116,11 @@ for ((i=1; i<=MAX_ATTEMPTS; i++)); do
         print_warning "Ошибка скачивания на попытке $i"
         if [ $i -eq $MAX_ATTEMPTS ]; then
             print_error "Не удалось скачать скрипт после $MAX_ATTEMPTS попыток"
+            echo ""
+            echo -e "${YELLOW}🔧 Возможные решения:${NC}"
+            echo "1. Проверьте подключение к интернету"
+            echo "2. Попробуйте позже или используйте локальную копию"
+            echo "3. Скачайте скрипт вручную: curl -o install.sh https://raw.githubusercontent.com/iwizard7/KanBe/main/install.sh"
             exit 1
         fi
         echo "⏳ Повторная попытка через 2 секунды..."
