@@ -1,12 +1,33 @@
 #!/bin/bash
 
 # Скрипт установки KanBe для Raspberry Pi 3 с Debian
-# Этот скриппт установит все необходимые зависимости и настроит приложение
-
-set -e  # Остановить выполнение при ошибке
+# Этот скрипт установит все необходимые зависимости и настроит приложение
 
 echo "=== Установка KanBe для Raspberry Pi 3 ==="
 echo ""
+
+# Сохранение текущей директории
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+PROJECT_DIR="$(pwd)"
+echo "Директория скрипта: $SCRIPT_DIR"
+echo "Проектная директория: $PROJECT_DIR"
+
+# Функция для выполнения команд с sudo без потери директории
+sudo_exec() {
+    local cmd="$*"
+    echo "Выполнение: sudo $cmd"
+    sudo bash -c "cd '$PROJECT_DIR' && $cmd"
+}
+
+# Функция для безопасного выполнения команд
+safe_exec() {
+    local cmd="$*"
+    echo "Выполнение: $cmd"
+    if ! eval "$cmd"; then
+        echo "Ошибка выполнения команды: $cmd"
+        return 1
+    fi
+}
 
 # Проверка ОС
 if [[ "$OSTYPE" != "linux-gnu"* ]]; then
@@ -24,22 +45,42 @@ fi
 
 # Обновление системы
 echo "Обновление системы..."
-sudo apt update
-sudo apt upgrade -y
+if ! sudo_exec "apt update"; then
+    echo "Ошибка обновления системы"
+    exit 1
+fi
+
+if ! sudo_exec "apt upgrade -y"; then
+    echo "Предупреждение: не удалось обновить все пакеты"
+fi
 
 # Установка необходимых пакетов
 echo "Установка системных зависимостей..."
-sudo apt install -y curl wget git build-essential python3-dev sqlite3 nginx
+if ! sudo_exec "apt install -y curl wget git build-essential python3-dev sqlite3 nginx"; then
+    echo "Ошибка установки системных зависимостей"
+    exit 1
+fi
 
 # Установка Node.js 18
 echo "Установка Node.js 18..."
 
 # Проверка существующей установки
-if command -v node &> /dev/null && command -v npm &> /dev/null && node --version &> /dev/null && npm --version &> /dev/null; then
-    echo "Node.js уже установлен и работает корректно:"
-    echo "Node.js версия: $(node --version)"
-    echo "NPM версия: $(npm --version)"
+if command -v node &> /dev/null && command -v npm &> /dev/null; then
+    NODE_VERSION=$(node --version 2>/dev/null)
+    NPM_VERSION=$(npm --version 2>/dev/null)
+    if [[ -n "$NODE_VERSION" && -n "$NPM_VERSION" ]]; then
+        echo "Node.js уже установлен и работает корректно:"
+        echo "Node.js версия: $NODE_VERSION"
+        echo "NPM версия: $NPM_VERSION"
+        NODE_INSTALLED=true
+    else
+        NODE_INSTALLED=false
+    fi
 else
+    NODE_INSTALLED=false
+fi
+
+if [ "$NODE_INSTALLED" = false ]; then
     echo "Node.js не найден. Начинаем установку..."
 
     # Попытка 1: Установка через nodesource
@@ -126,10 +167,65 @@ fi
 # Установка PM2
 echo "Установка PM2..."
 if command -v npm &> /dev/null; then
-    sudo npm install -g pm2
+    if ! sudo_exec "npm install -g pm2"; then
+        echo "Ошибка установки PM2 через npm. Попытка через apt..."
+        if ! sudo_exec "apt-get install -y pm2"; then
+            echo "Ошибка: не удалось установить PM2"
+            exit 1
+        fi
+    fi
 else
-    echo "Ошибка: npm не найден. Установка PM2 через apt..."
-    sudo apt-get install -y pm2
+    echo "npm не найден. Установка PM2 через apt..."
+    if ! sudo_exec "apt-get install -y pm2"; then
+        echo "Ошибка: не удалось установить PM2"
+        exit 1
+    fi
+fi
+
+# Проверка наличия файлов проекта
+echo "Проверка файлов проекта..."
+if [ ! -f "package.json" ]; then
+    echo "Файлы проекта не найдены. Клонирование репозитория..."
+    if git clone https://github.com/iwizard7/KanBe.git temp_kanbe 2>/dev/null; then
+        # Перемещение файлов из temp_kanbe в текущую директорию
+        mv temp_kanbe/* . 2>/dev/null || true
+        mv temp_kanbe/.* . 2>/dev/null || true
+        rm -rf temp_kanbe
+        echo "Репозиторий успешно клонирован"
+    else
+        echo "Ошибка клонирования репозитория"
+        echo "Пожалуйста, вручную клонируйте репозиторий:"
+        echo "git clone https://github.com/iwizard7/KanBe.git"
+        exit 1
+    fi
+else
+    echo "Файлы проекта найдены в текущей директории"
+fi
+
+# Проверка package.json после клонирования
+if [ ! -f "package.json" ]; then
+    echo "Ошибка: package.json не найден после клонирования"
+    exit 1
+fi
+
+# Установка зависимостей проекта
+echo "Установка зависимостей проекта..."
+if ! safe_exec "npm install"; then
+    echo "Ошибка установки зависимостей"
+    exit 1
+fi
+
+# Сборка better-sqlite3 для ARM
+echo "Сборка better-sqlite3 для ARM архитектуры..."
+if ! safe_exec "npm rebuild better-sqlite3"; then
+    echo "Предупреждение: не удалось пересобрать better-sqlite3"
+fi
+
+# Создание директории для базы данных
+echo "Создание директории для базы данных..."
+if ! mkdir -p data; then
+    echo "Ошибка создания директории data"
+    exit 1
 fi
 
 # Запрос данных для настройки
@@ -152,41 +248,15 @@ fi
 read -p "Создать системного пользователя для приложения? (y/n): " CREATE_USER
 if [[ $CREATE_USER =~ ^[Yy]$ ]]; then
     read -p "Имя пользователя: " APP_USER
-    sudo useradd -m -s /bin/bash $APP_USER
-    echo "Пользователь $APP_USER создан"
-fi
-
-# Проверка наличия файлов проекта
-if [ ! -f "package.json" ]; then
-    echo "Файлы проекта не найдены. Клонирование репозитория..."
-    if git clone https://github.com/iwizard7/KanBe.git temp_kanbe 2>/dev/null; then
-        # Перемещение файлов из temp_kanbe в текущую директорию
-        mv temp_kanbe/* . 2>/dev/null
-        mv temp_kanbe/.* . 2>/dev/null || true
-        rm -rf temp_kanbe
-        echo "Репозиторий успешно клонирован"
-        # Перезапуск скрипта с новыми файлами
-        exec bash install.sh
-    else
-        echo "Ошибка клонирования репозитория"
-        echo "Пожалуйста, вручную клонируйте репозиторий:"
-        echo "git clone https://github.com/iwizard7/KanBe.git"
-        exit 1
+    if [ -n "$APP_USER" ]; then
+        if ! sudo_exec "useradd -m -s /bin/bash $APP_USER"; then
+            echo "Предупреждение: не удалось создать пользователя $APP_USER"
+            APP_USER=""
+        else
+            echo "Пользователь $APP_USER создан"
+        fi
     fi
-else
-    echo "Файлы проекта найдены в текущей директории"
 fi
-
-# Установка зависимостей проекта
-echo "Установка зависимостей проекта..."
-npm install
-
-# Сборка better-sqlite3 для ARM
-echo "Сборка better-sqlite3 для ARM архитектуры..."
-npm rebuild better-sqlite3
-
-# Создание директории для базы данных
-mkdir -p data
 
 # Создание .env файла
 echo "Создание файла конфигурации..."
@@ -198,15 +268,24 @@ DATABASE_URL=./data/kanbe.db
 DEV_PORT=$DEV_PORT
 EOF
 
+if [ ! -f ".env" ]; then
+    echo "Ошибка создания файла .env"
+    exit 1
+fi
 echo "Файл .env создан"
 
 # Применение миграций базы данных
 echo "Настройка базы данных..."
-npm run db:push
+if ! safe_exec "npm run db:push"; then
+    echo "Предупреждение: не удалось применить миграции базы данных"
+fi
 
 # Сборка приложения
 echo "Сборка приложения..."
-npm run build
+if ! safe_exec "npm run build"; then
+    echo "Ошибка сборки приложения"
+    exit 1
+fi
 
 # Настройка nginx (опционально)
 read -p "Настроить nginx как reverse proxy? (y/n): " SETUP_NGINX
