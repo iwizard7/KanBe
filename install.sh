@@ -43,6 +43,57 @@ if [[ "$ARCH" != "armv7l" && "$ARCH" != "aarch64" ]]; then
     echo "Текущая архитектура: $ARCH"
 fi
 
+# Функция проверки свободного места
+check_disk_space() {
+    local min_space_mb=500  # Минимально необходимое место в МБ
+    local temp_dir="/tmp"
+
+    echo "Проверка свободного места на диске..."
+
+    # Проверка места в /tmp
+    local temp_space=$(df "$temp_dir" | awk 'NR==2 {print int($4/1024)}')
+    echo "Свободное место в $temp_dir: ${temp_space}MB"
+
+    if [ "$temp_space" -lt "$min_space_mb" ]; then
+        echo "⚠️  Недостаточно места в $temp_dir (${temp_space}MB < ${min_space_mb}MB)"
+
+        # Попытка очистки временных файлов
+        echo "🧹 Попытка очистки временных файлов..."
+        sudo find /tmp -type f -mtime +1 -delete 2>/dev/null || true
+        sudo find /tmp -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+
+        # Проверка после очистки
+        temp_space=$(df "$temp_dir" | awk 'NR==2 {print int($4/1024)}')
+        echo "Свободное место после очистки: ${temp_space}MB"
+
+        if [ "$temp_space" -lt "$min_space_mb" ]; then
+            echo "❌ Критически недостаточно места для установки"
+            echo ""
+            echo "🔧 Рекомендации по освобождению места:"
+            echo ""
+            echo "1. Очистите временные файлы:"
+            echo "   sudo find /tmp -type f -mtime +1 -delete"
+            echo "   sudo apt-get clean"
+            echo "   sudo apt-get autoclean"
+            echo ""
+            echo "2. Удалите ненужные пакеты:"
+            echo "   sudo apt-get autoremove"
+            echo ""
+            echo "3. Очистите npm кэш:"
+            echo "   npm cache clean --force"
+            echo ""
+            echo "4. Проверьте использование диска:"
+            echo "   df -h"
+            echo "   du -sh /* 2>/dev/null | sort -hr | head -10"
+            echo ""
+            echo "Требуется минимум ${min_space_mb}MB свободного места"
+            exit 1
+        fi
+    fi
+
+    echo "✅ Дисковое пространство проверено"
+}
+
 # Запрос директории установки
 echo ""
 echo "=== Выбор директории установки ==="
@@ -88,6 +139,10 @@ fi
 
 # Обновление переменных директорий
 PROJECT_DIR="$(pwd)"
+
+# Проверка дискового пространства перед установкой
+check_disk_space
+
 echo ""
 echo "📋 Информация об установке:"
 echo "   Директория установки: $PROJECT_DIR"
