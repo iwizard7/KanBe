@@ -37,12 +37,30 @@ curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Проверка установки Node.js
-echo "Node.js версия: $(node --version)"
-echo "NPM версия: $(npm --version)"
+if command -v node &> /dev/null; then
+    echo "Node.js версия: $(node --version)"
+    echo "NPM версия: $(npm --version)"
+else
+    echo "Ошибка: Node.js не установлен. Попробуем альтернативный метод..."
+    # Альтернативная установка через snap или другие методы
+    sudo apt-get install -y nodejs npm
+    if command -v node &> /dev/null; then
+        echo "Node.js версия: $(node --version)"
+        echo "NPM версия: $(npm --version)"
+    else
+        echo "Критическая ошибка: не удалось установить Node.js"
+        exit 1
+    fi
+fi
 
 # Установка PM2
 echo "Установка PM2..."
-sudo npm install -g pm2
+if command -v npm &> /dev/null; then
+    sudo npm install -g pm2
+else
+    echo "Ошибка: npm не найден. Установка PM2 через apt..."
+    sudo apt-get install -y pm2
+fi
 
 # Запрос данных для настройки
 echo ""
