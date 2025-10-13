@@ -58,13 +58,27 @@ print_success "Операционная система проверена"
 ORIGINAL_DIR="$(pwd)"
 print_info "Исходная директория: $ORIGINAL_DIR"
 
-# Создание временной директории для установки
+# Создание временной директории для установки в постоянном хранилище
 print_step "Создание временной директории..."
-TEMP_DIR=$(mktemp -d)
-if [ -z "$TEMP_DIR" ] || [ ! -d "$TEMP_DIR" ]; then
-    print_error "Не удалось создать временную директорию"
+# Используем /var/tmp вместо /tmp для постоянного хранения
+TEMP_DIR="/var/tmp/kanbe-install-$(date +%s)"
+if ! mkdir -p "$TEMP_DIR"; then
+    # Альтернатива: использовать домашнюю директорию
+    TEMP_DIR="$HOME/kanbe-install-$(date +%s)"
+    if ! mkdir -p "$TEMP_DIR"; then
+        print_error "Не удалось создать временную директорию"
+        exit 1
+    fi
+fi
+
+# Проверка создания директории
+if [ ! -d "$TEMP_DIR" ]; then
+    print_error "Временная директория не существует после создания"
     exit 1
 fi
+
+# Установка правильных прав доступа
+chmod 755 "$TEMP_DIR"
 print_success "Временная директория создана: $TEMP_DIR"
 
 # Функция очистки при выходе
@@ -131,52 +145,97 @@ print_success "Права доступа настроены"
 # Функция проверки свободного места
 check_disk_space() {
     local min_space_mb=500  # Минимально необходимое место в МБ
-    local temp_dir="/tmp"
 
     echo -e "${CYAN}🔍 Проверка свободного места на диске...${NC}"
 
-    # Проверка места в /tmp
-    local temp_space=$(df "$temp_dir" | awk 'NR==2 {print int($4/1024)}')
-    echo "Свободное место в $temp_dir: ${temp_space}MB"
+    # Проверяем место в корневом разделе (постоянное хранилище)
+    local root_space=$(df / | awk 'NR==2 {print int($4/1024)}')
+    local root_device=$(df / | awk 'NR==2 {print $1}')
+    echo "Основное хранилище ($root_device): ${root_space}MB свободно"
 
-    if [ "$temp_space" -lt "$min_space_mb" ]; then
-        echo -e "${YELLOW}⚠️  Недостаточно места в $temp_dir (${temp_space}MB < ${min_space_mb}MB)${NC}"
+    # Проверяем место в /var/tmp (если существует)
+    if [ -d "/var/tmp" ]; then
+        local var_space=$(df /var/tmp | awk 'NR==2 {print int($4/1024)}')
+        echo "Хранилище /var/tmp: ${var_space}MB свободно"
+    fi
 
-        # Попытка очистки временных файлов
+    # Проверяем место в домашней директории
+    local home_space=$(df "$HOME" | awk 'NR==2 {print int($4/1024)}')
+    echo "Домашняя директория: ${home_space}MB свободно"
+
+    # Используем наибольшее значение среди постоянных хранилищ
+    local available_space=$root_space
+    if [ -d "/var/tmp" ] && [ "$var_space" -gt "$available_space" ]; then
+        available_space=$var_space
+    fi
+    if [ "$home_space" -gt "$available_space" ]; then
+        available_space=$home_space
+    fi
+
+    echo "Используется наибольшее значение: ${available_space}MB"
+
+    if [ "$available_space" -lt "$min_space_mb" ]; then
+        echo -e "${YELLOW}⚠️  Недостаточно места в постоянном хранилище (${available_space}MB < ${min_space_mb}MB)${NC}"
+
+        # Попытка очистки временных файлов в постоянном хранилище
         echo -e "${CYAN}🧹 Попытка очистки временных файлов...${NC}"
-        sudo find /tmp -type f -mtime +1 -delete 2>/dev/null || true
-        sudo find /tmp -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+
+        # Очищаем /var/tmp если существует
+        if [ -d "/var/tmp" ]; then
+            sudo find /var/tmp -type f -mtime +1 -delete 2>/dev/null || true
+            sudo find /var/tmp -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+        fi
+
+        # Очищаем кэш в домашней директории
+        if [ -d "$HOME/.npm" ]; then
+            npm cache clean --force 2>/dev/null || true
+        fi
+
+        # Очищаем системные кэши
+        sudo apt-get clean 2>/dev/null || true
+        sudo apt-get autoclean 2>/dev/null || true
 
         # Проверка после очистки
-        temp_space=$(df "$temp_dir" | awk 'NR==2 {print int($4/1024)}')
-        echo "Свободное место после очистки: ${temp_space}MB"
+        root_space=$(df / | awk 'NR==2 {print int($4/1024)}')
+        available_space=$root_space
 
-        if [ "$temp_space" -lt "$min_space_mb" ]; then
-            echo -e "${RED}❌ Критически недостаточно места для установки${NC}"
+        if [ -d "/var/tmp" ]; then
+            var_space=$(df /var/tmp | awk 'NR==2 {print int($4/1024)}')
+            if [ "$var_space" -gt "$available_space" ]; then
+                available_space=$var_space
+            fi
+        fi
+
+        echo "Свободное место после очистки: ${available_space}MB"
+
+        if [ "$available_space" -lt "$min_space_mb" ]; then
+            echo -e "${RED}❌ Критически недостаточно места в постоянном хранилище${NC}"
             echo ""
             echo -e "${YELLOW}🔧 Рекомендации по освобождению места:${NC}"
             echo ""
-            echo "1. Очистите временные файлы:"
-            echo "   sudo find /tmp -type f -mtime +1 -delete"
-            echo "   sudo apt-get clean"
-            echo "   sudo apt-get autoclean"
-            echo ""
-            echo "2. Удалите ненужные пакеты:"
+            echo "1. Очистите кэш пакетного менеджера:"
+            echo "   sudo apt-get clean && sudo apt-get autoclean"
             echo "   sudo apt-get autoremove"
             echo ""
-            echo "3. Очистите npm кэш:"
+            echo "2. Очистите npm кэш:"
             echo "   npm cache clean --force"
+            echo ""
+            echo "3. Удалите ненужные файлы из /var/tmp:"
+            echo "   sudo find /var/tmp -type f -mtime +1 -delete"
             echo ""
             echo "4. Проверьте использование диска:"
             echo "   df -h"
-            echo "   du -sh /* 2>/dev/null | sort -hr | head -10"
+            echo "   du -sh /var/* /home/* 2>/dev/null | sort -hr | head -10"
             echo ""
-            echo -e "${YELLOW}Требуется минимум ${min_space_mb}MB свободного места${NC}"
+            echo "5. Увеличьте размер раздела (если возможно):"
+            echo "   sudo raspi-config (Advanced Options -> Expand Filesystem)"
+            echo ""
+            echo -e "${YELLOW}Требуется минимум ${min_space_mb}MB свободного места в постоянном хранилище${NC}"
             exit 1
         fi
     fi
 
-    print_success "Дисковое пространство проверено"
+    print_success "Дисковое пространство проверено (${available_space}MB доступно)"
 }
 
 # Проверка дискового пространства перед установкой
