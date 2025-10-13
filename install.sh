@@ -422,13 +422,16 @@ read -s -p "Пароль для первого пользователя: " ADMIN
 echo ""
 
 # Создание временного скрипта для создания пользователя
-cat > create_admin.js << 'EOF'
+cat > create_admin.js << EOF
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as schema from './shared/schema.js';
+import * as schema from '${PROJECT_DIR}/shared/schema.js';
 import bcrypt from 'bcrypt';
 
-const sqlite = new Database('./data/kanbe.db');
+console.log('Рабочая директория:', process.cwd());
+console.log('Путь к схеме:', '${PROJECT_DIR}/shared/schema.js');
+
+const sqlite = new Database('${PROJECT_DIR}/data/kanbe.db');
 const db = drizzle({ client: sqlite, schema });
 
 async function createAdmin() {
@@ -453,10 +456,11 @@ async function createAdmin() {
             })
             .returning();
 
-        console.log(`Пользователь ${email} создан успешно`);
-        console.log(`ID пользователя: ${user.id}`);
+        console.log(\`Пользователь \${email} создан успешно\`);
+        console.log(\`ID пользователя: \${user.id}\`);
     } catch (error) {
         console.error('Ошибка создания пользователя:', error);
+        console.error('Проверьте путь к файлу схемы и базе данных');
     } finally {
         sqlite.close();
     }
@@ -467,10 +471,14 @@ EOF
 
 # Запуск скрипта создания пользователя
 echo "Создание администратора..."
-node create_admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD"
+if [ -f "create_admin.js" ]; then
+    node create_admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD"
+else
+    echo "Ошибка: файл create_admin.js не создан"
+fi
 
 # Очистка
-rm create_admin.js
+rm -f create_admin.js
 
 # Настройка автозапуска
 echo "Настройка автозапуска..."
