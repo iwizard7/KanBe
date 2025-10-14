@@ -310,33 +310,48 @@ build_application() {
 
 # Загрузка кода проекта
 download_code() {
+    print_step "Проверка кода проекта..."
+
+    # Проверяем, находимся ли мы уже в репозитории KanBe
+    if [ -d ".git" ] && [ -f "package.json" ]; then
+        print_info "Обнаружен существующий репозиторий KanBe"
+
+        # Проверяем remote URL
+        if git remote get-url origin 2>/dev/null | grep -q "iwizard7/KanBe"; then
+            print_info "Обновление существующего репозитория..."
+            git pull origin main || git pull origin master
+            if [ $? -eq 0 ]; then
+                print_success "Репозиторий обновлен"
+            else
+                print_warning "Не удалось обновить репозиторий, продолжаем с текущей версией"
+            fi
+        else
+            print_info "Репозиторий найден, но remote URL отличается"
+            print_info "Продолжаем с текущей версией кода"
+        fi
+        return 0
+    fi
+
+    # Если package.json существует, но нет .git, считаем код уже присутствующим
     if [ -f "package.json" ]; then
-        print_info "Код проекта уже присутствует"
+        print_info "Код проекта уже присутствует (без git репозитория)"
         return 0
     fi
 
     print_step "Загрузка кода проекта..."
 
-    # Проверка, пустая ли директория
-    if [ "$(ls -A .)" ]; then
-        print_warning "Директория не пустая. Для установки KanBe требуется пустая директория."
-        read -p "Очистить директорию перед загрузкой кода? (y/n): " CLEAR_DIR
-        if [[ $CLEAR_DIR =~ ^[Yy]$ ]]; then
-            print_info "Очистка директории..."
-            rm -rf ./*
-            rm -rf ./.*
-        else
-            print_error "Установка отменена. Пожалуйста, запустите установщик в пустой директории."
-            exit 1
-        fi
-    fi
-
     if command -v git &> /dev/null; then
-        git clone https://github.com/iwizard7/KanBe.git .
-        if [ $? -eq 0 ]; then
-            print_success "Код проекта загружен"
+        # Проверяем, пуста ли директория
+        if [ -z "$(ls -A . 2>/dev/null)" ]; then
+            git clone https://github.com/iwizard7/KanBe.git .
+            if [ $? -eq 0 ]; then
+                print_success "Код проекта загружен"
+            else
+                print_error "Ошибка загрузки кода проекта"
+                exit 1
+            fi
         else
-            print_error "Ошибка загрузки кода проекта"
+            print_error "Директория не пустая. Очистите директорию или выберите другую для установки"
             exit 1
         fi
     else
