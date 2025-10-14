@@ -1,10 +1,199 @@
 #!/bin/bash
 
-# Скрипт установки KanBe для Raspberry Pi 3 с Debian
-# Этот скрипт установит все необходимые зависимости и настроит приложение
+# 🎯 Универсальный установщик KanBe для всех платформ
+# 🔄 Автоматически определяет ОС, архитектуру и настраивает приложение
 
-echo "=== Установка KanBe для Raspberry Pi 3 ==="
-echo ""
+# Цвета для красивого вывода
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Функция для красивого вывода
+print_step() {
+    echo -e "${BLUE}🔄 [ШАГ] $1${NC}"
+}
+
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+print_info() {
+    echo -e "${CYAN}ℹ️  $1${NC}"
+}
+
+print_header() {
+    echo -e "${PURPLE}🎯 === Универсальный установщик KanBe ===${NC}"
+    echo ""
+}
+
+print_footer() {
+    echo ""
+    echo -e "${GREEN}🚀 Установка завершена! Добро пожаловать в KanBe!${NC}"
+}
+
+# Определение платформы и архитектуры
+detect_platform() {
+    print_header
+
+    print_step "Определение платформы и архитектуры..."
+
+    OS=$(uname -s)
+    ARCH=$(uname -m)
+
+    case $OS in
+        "Darwin")
+            PLATFORM="macos"
+            print_info "Обнаружена macOS"
+            ;;
+        "Linux")
+            PLATFORM="linux"
+            print_info "Обнаружена Linux"
+
+            # Проверка на Raspberry Pi
+            if [[ -f /proc/device-tree/model ]] && grep -q "Raspberry Pi" /proc/device-tree/model 2>/dev/null; then
+                PLATFORM="raspberry-pi"
+                print_info "Обнаружен Raspberry Pi"
+            fi
+            ;;
+        *)
+            print_error "Неподдерживаемая операционная система: $OS"
+            exit 1
+            ;;
+    esac
+
+    case $ARCH in
+        "arm64"|"aarch64")
+            CPU_ARCH="arm64"
+            print_info "Архитектура процессора: ARM64"
+            ;;
+        "x86_64"|"amd64")
+            CPU_ARCH="x86_64"
+            print_info "Архитектура процессора: x86_64"
+            ;;
+        "armv7l")
+            CPU_ARCH="armv7l"
+            print_info "Архитектура процессора: ARMv7 (32-bit)"
+            ;;
+        *)
+            print_warning "Неизвестная архитектура: $ARCH"
+            CPU_ARCH="unknown"
+            ;;
+    esac
+
+    print_success "Платформа определена: $PLATFORM ($CPU_ARCH)"
+}
+
+# Основная функция установки
+main() {
+    # Определение платформы
+    detect_platform
+
+    # Проверка требований
+    check_requirements
+
+    # Установка Node.js
+    install_nodejs
+
+    # Установка зависимостей
+    install_dependencies
+
+    # Сборка нативных модулей
+    build_native_modules
+
+    # Настройка базы данных
+    setup_database
+
+    # Создание конфигурации
+    create_config
+
+    # Сборка приложения
+    build_application
+
+    print_footer
+
+    echo ""
+    echo -e "${CYAN}📋 Информация об установке:${NC}"
+    echo "   Платформа: $PLATFORM"
+    echo "   Архитектура: $CPU_ARCH"
+    echo "   Директория: $(pwd)"
+    echo ""
+    echo -e "${GREEN}🚀 KanBe готов к запуску!${NC}"
+    echo ""
+    echo "Команды для запуска:"
+    echo "  Разработка: npm run dev (API) + npm run dev:client (фронтенд)"
+    echo "  Продакшн: npm run start"
+    echo ""
+    echo "Порты:"
+    echo "  API: $API_PORT"
+    echo "  Фронтенд: $DEV_PORT"
+}
+
+# Запуск основной функции
+main "$@"
+
+# Определение платформы и архитектуры
+detect_platform() {
+    print_header
+
+    print_step "Определение платформы и архитектуры..."
+
+    OS=$(uname -s)
+    ARCH=$(uname -m)
+
+    case $OS in
+        "Darwin")
+            PLATFORM="macos"
+            print_info "Обнаружена macOS"
+            ;;
+        "Linux")
+            PLATFORM="linux"
+            print_info "Обнаружена Linux"
+
+            # Проверка на Raspberry Pi
+            if [[ -f /proc/device-tree/model ]] && grep -q "Raspberry Pi" /proc/device-tree/model 2>/dev/null; then
+                PLATFORM="raspberry-pi"
+                print_info "Обнаружен Raspberry Pi"
+            fi
+            ;;
+        *)
+            print_error "Неподдерживаемая операционная система: $OS"
+            exit 1
+            ;;
+    esac
+
+    case $ARCH in
+        "arm64"|"aarch64")
+            CPU_ARCH="arm64"
+            print_info "Архитектура процессора: ARM64"
+            ;;
+        "x86_64"|"amd64")
+            CPU_ARCH="x86_64"
+            print_info "Архитектура процессора: x86_64"
+            ;;
+        "armv7l")
+            CPU_ARCH="armv7l"
+            print_info "Архитектура процессора: ARMv7 (32-bit)"
+            ;;
+        *)
+            print_warning "Неизвестная архитектура: $ARCH"
+            CPU_ARCH="unknown"
+            ;;
+    esac
+
+    print_success "Платформа определена: $PLATFORM ($CPU_ARCH)"
+}
 
 # Сохранение текущей директории
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
@@ -29,19 +218,47 @@ safe_exec() {
     fi
 }
 
-# Проверка ОС
-if [[ "$OSTYPE" != "linux-gnu"* ]]; then
-    echo "Этот скрипт предназначен для Linux (Debian на Raspberry Pi)"
-    echo "Текущая ОС: $OSTYPE"
-    exit 1
-fi
+# Проверка системных требований
+check_requirements() {
+    print_step "Проверка системных требований..."
 
-# Проверка архитектуры
-ARCH=$(uname -m)
-if [[ "$ARCH" != "armv7l" && "$ARCH" != "aarch64" ]]; then
-    echo "Предупреждение: Этот скрипт оптимизирован для ARM архитектуры (Raspberry Pi)"
-    echo "Текущая архитектура: $ARCH"
-fi
+    case $PLATFORM in
+        "macos")
+            # Проверка Xcode Command Line Tools для macOS
+            if ! command -v clang &> /dev/null; then
+                print_warning "Xcode Command Line Tools не найдены"
+                read -p "Установить Xcode Command Line Tools? (y/n): " INSTALL_XCODE
+                if [[ $INSTALL_XCODE =~ ^[Yy]$ ]]; then
+                    print_info "Установка Xcode Command Line Tools..."
+                    xcode-select --install
+                    print_success "Xcode Command Line Tools установлены"
+                else
+                    print_error "Xcode Command Line Tools необходимы для сборки нативных модулей"
+                    exit 1
+                fi
+            else
+                print_success "Xcode Command Line Tools найдены"
+            fi
+            ;;
+        "linux"|"raspberry-pi")
+            # Проверка build-essential для Linux
+            if ! dpkg -l | grep -q build-essential; then
+                print_warning "build-essential не установлен"
+                if command -v apt-get &> /dev/null; then
+                    print_info "Установка build-essential..."
+                    sudo apt-get update
+                    sudo apt-get install -y build-essential
+                    print_success "build-essential установлен"
+                else
+                    print_error "Не найден apt-get. Установите build-essential вручную"
+                    exit 1
+                fi
+            else
+                print_success "build-essential найден"
+            fi
+            ;;
+    esac
+}
 
 # Функция проверки свободного места
 check_disk_space() {

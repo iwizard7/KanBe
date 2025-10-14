@@ -1,0 +1,13 @@
+
+> rest-express@1.0.0 dev:client
+> vite --port 3000
+
+
+  VITE v5.4.20  ready in 108 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://127.94.0.1:3000/
+  ➜  Network: http://192.168.105.1:3000/
+  ➜  Network: http://172.17.93.127:3000/
+  ➜  Network: http://198.18.0.1:3000/
+  ➜  press h + enter to show help

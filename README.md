@@ -1,40 +1,60 @@
-# KanBe - Канбан доска для Raspberry Pi
+# KanBe - Кроссплатформенная Канбан доска
 
-Легковесная Kanban-доска, оптимизированная для работы на Raspberry Pi 3 с Debian.
+Современная Kanban-доска с полной поддержкой macOS (Apple Silicon) и Raspberry Pi.
 
-## Особенности
+## 🌟 Особенности
 
+- ✅ Полная поддержка macOS с процессорами M-серии (Apple Silicon)
+- ✅ Оптимизировано для Raspberry Pi 3/4/5 с ARM архитектурой
 - ✅ Локальная аутентификация (email + пароль)
 - ✅ SQLite база данных (низкое потребление ресурсов)
 - ✅ Drag & drop интерфейс
 - ✅ Цветные метки для задач
-- ✅ Оптимизировано для ARM архитектуры
+- ✅ Адаптивный дизайн для всех устройств
+- ✅ Автоматическое определение платформы и архитектуры
 
-## Быстрая установка
+## 🚀 Быстрая установка
 
-### Вариант 1: Полностью автоматическая установка
+### Автоматическая установка (рекомендуется)
+
+#### Универсальный установщик (автоматически определяет платформу)
 ```bash
-curl -fsSL https://raw.githubusercontent.com/iwizard7/KanBe/main/install-online.sh | sudo bash
+# Скачайте и запустите универсальный скрипт
+curl -fsSL https://raw.githubusercontent.com/iwizard7/KanBe/main/install.sh -o install.sh
+chmod +x install.sh
+./install.sh
 ```
 
-### Вариант 2: Ручная установка
+#### Для Raspberry Pi / Linux (альтернативный способ)
+```bash
+# Полностью автоматическая установка без скачивания файла
+curl -fsSL https://raw.githubusercontent.com/iwizard7/KanBe/main/install.sh | bash
+```
+
+### Ручная установка
+
+#### Для всех платформ (macOS, Linux, Raspberry Pi)
+
 1. **Скачайте проект:**
    ```bash
    git clone https://github.com/iwizard7/KanBe.git
-   cd kanbe
+   cd KanBe
    ```
 
-2. **Запустите скрипт установки:**
+2. **Запустите универсальный скрипт установки:**
    ```bash
-   sudo ./install.sh
+   chmod +x install.sh
+   ./install.sh
    ```
 
-   Скрипт запросит:
-   - Порт API сервера (по умолчанию 5000)
-   - Порт фронтенда для разработки (по умолчанию 3000)
-   - Секрет для сессий (автоматически генерируется)
-   - Настройки nginx (опционально)
-   - Данные первого пользователя (email + пароль)
+   Универсальный скрипт автоматически:
+   - Определит вашу платформу и архитектуру процессора
+   - Проверит и установит системные зависимости
+   - Установит Node.js 18 LTS оптимальным способом для вашей системы
+   - Соберет нативные модули для вашей архитектуры
+   - Настроит базу данных
+   - Создаст конфигурацию
+   - Создаст первого пользователя
 
 3. **Готово!** Приложение будет доступно на `http://localhost`
   - API: `http://localhost:5000`
@@ -135,10 +155,20 @@ npm run start
 
 ## Системные требования
 
-- **ОС:** Debian (Raspberry Pi OS)
-- **Архитектура:** ARMv7 (Raspberry Pi 3/4)
-- **Память:** Минимум 512MB RAM
-- **Node.js:** 18+
+### Для macOS
+- **ОС:** macOS 10.15+ (Catalina или новее)
+- **Архитектура:** Apple Silicon (M1/M2/M3) или Intel x64
+- **Память:** Минимум 1GB RAM (рекомендуется 2GB+)
+- **Node.js:** 18+ (устанавливается автоматически)
+- **Дополнительно:** Xcode Command Line Tools (устанавливается автоматически)
+- **База данных:** SQLite (включается автоматически)
+
+### Для Raspberry Pi
+- **ОС:** Raspberry Pi OS (Debian-based)
+- **Архитектура:** ARMv7 (Pi 3/4) или ARM64 (Pi 5)
+- **Память:** Минимум 512MB RAM (рекомендуется 1GB+)
+- **Node.js:** 18+ (устанавливается автоматически)
+- **Дополнительно:** build-essential, python3-dev (устанавливается автоматически)
 - **База данных:** SQLite (включается автоматически)
 
 ## Структура проекта
@@ -173,13 +203,65 @@ kanbe/
 ## Устранение неполадок
 
 ### Проблемы с better-sqlite3
+
+#### Для Apple Silicon (macOS)
+```bash
+# Специальная сборка для ARM64
+npm rebuild better-sqlite3 --build-from-source
+
+# Если проблемы продолжаются
+npm config set python python3
+npm install better-sqlite3 --build-from-source
+```
+
+#### Для Raspberry Pi / Linux
 ```bash
 npm rebuild better-sqlite3
 # или
 npm install better-sqlite3 --build-from-source
 ```
 
+### Проблемы с установкой на macOS
+
+#### Xcode Command Line Tools не устанавливаются
+```bash
+# Ручная установка
+xcode-select --install
+
+# Если команда недоступна, установите Xcode из App Store
+# Или скачайте инструменты разработчика с сайта Apple
+```
+
+#### Homebrew не устанавливается
+```bash
+# Убедитесь что у вас macOS 10.15+
+# Проверьте подключение к интернету
+# Попробуйте альтернативную установку:
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+#### Node.js не устанавливается через Homebrew
+```bash
+# Альтернативная установка Node.js
+curl -fsSL https://nodejs.org/dist/v18.19.1/node-v18.19.1-darwin-arm64.tar.gz -o node.tar.gz
+sudo mkdir -p /usr/local/lib/nodejs
+sudo tar -xf node.tar.gz -C /usr/local/lib/nodejs
+sudo ln -sf /usr/local/lib/nodejs/node-v18.19.1-darwin-arm64/bin/* /usr/local/bin/
+```
+
 ### Порт занят
+
+#### macOS
+```bash
+# Проверить занятые порты
+lsof -i :5000
+lsof -i :3000
+
+# Убить процесс
+kill -9 <PID>
+```
+
+#### Linux/Raspberry Pi
 ```bash
 # Проверить занятые порты
 sudo netstat -tulpn | grep :5000
@@ -195,10 +277,33 @@ npm run dev:client -- --port 3001
 # Или изменить в vite.config.ts
 ```
 
-### Nginx не работает
+### Nginx не работает (только Linux)
 ```bash
 sudo nginx -t
 sudo systemctl restart nginx
+```
+
+### Проблемы с производительностью на Apple Silicon
+```bash
+# Включить Rosetta для лучшей совместимости (если нужно)
+# Некоторые старые приложения могут требовать Rosetta 2
+
+# Проверить архитектуру процессов
+arch
+file $(which node)
+```
+
+### Проблемы с памятью на Raspberry Pi
+```bash
+# Проверить использование памяти
+free -h
+
+# Очистить кэш
+sudo apt-get clean
+sudo apt-get autoclean
+
+# Отключить ненужные сервисы
+sudo systemctl disable <service-name>
 ```
 
 ## Лицензия

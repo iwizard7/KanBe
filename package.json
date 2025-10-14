@@ -7,9 +7,25 @@
     "dev": "NODE_ENV=development tsx server/index.ts",
     "dev:client": "vite --port 3000",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:better-sqlite3",
+    "build:macos": "npm run build:macos:client && npm run build:macos:server",
+    "build:macos:client": "vite build",
+    "build:macos:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:better-sqlite3",
+    "build:linux": "npm run build:linux:client && npm run build:linux:server",
+    "build:linux:client": "vite build",
+    "build:linux:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:better-sqlite3",
     "start": "NODE_ENV=production node dist/index.js",
+    "start:pm2": "NODE_ENV=production pm2 start dist/index.js --name kanbe",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate",
+    "postinstall": "npm run build:native",
+    "build:native": "npm rebuild better-sqlite3",
+    "build:native:macos": "npm rebuild better-sqlite3 --build-from-source",
+    "build:native:linux": "npm rebuild better-sqlite3",
+    "setup": "chmod +x install-universal.sh && ./install-universal.sh",
+    "setup:macos": "chmod +x install-macos.sh && ./install-macos.sh",
+    "setup:linux": "chmod +x install.sh && ./install.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -45,6 +61,7 @@
     "@tanstack/react-query": "^5.60.5",
     "@types/memoizee": "^0.4.12",
     "bcrypt": "^5.1.1",
+    "better-sqlite3": "^12.4.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -106,7 +123,38 @@
     "vite": "^5.4.20"
   },
   "optionalDependencies": {
-    "better-sqlite3": "^9.4.3",
     "bufferutil": "^4.0.8"
-  }
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "keywords": [
+    "kanban",
+    "react",
+    "typescript",
+    "sqlite",
+    "express",
+    "vite",
+    "tailwindcss",
+    "drizzle-orm",
+    "apple-silicon",
+    "raspberry-pi",
+    "arm64",
+    "cross-platform"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iwizard7/KanBe.git"
+  },
+  "author": "KanBe Team",
+  "description": "Современное Kanban-приложение с поддержкой macOS (Apple Silicon) и Raspberry Pi"
 }
