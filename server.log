@@ -1,0 +1,11 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+1:40:11 PM [express] serving on port 5005
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+1:41:10 PM [vite] changed tsconfig file detected: /Users/dmitrijsibanov/Desktop/My projects/KanBe/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
