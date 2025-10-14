@@ -308,6 +308,29 @@ build_application() {
     fi
 }
 
+# Загрузка кода проекта
+download_code() {
+    if [ -f "package.json" ]; then
+        print_info "Код проекта уже присутствует"
+        return 0
+    fi
+
+    print_step "Загрузка кода проекта..."
+
+    if command -v git &> /dev/null; then
+        git clone https://github.com/iwizard7/KanBe.git .
+        if [ $? -eq 0 ]; then
+            print_success "Код проекта загружен"
+        else
+            print_error "Ошибка загрузки кода проекта"
+            exit 1
+        fi
+    else
+        print_error "Git не найден. Установите git для загрузки кода"
+        exit 1
+    fi
+}
+
 # Проверка системных требований
 check_requirements() {
     print_step "Проверка системных требований..."
@@ -485,6 +508,9 @@ main() {
 
     # Выбор директории установки
     select_installation_directory
+
+    # Загрузка кода проекта
+    download_code
 
     # Обновление переменных директорий
     PROJECT_DIR="$(pwd)"
