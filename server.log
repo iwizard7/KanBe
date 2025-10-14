@@ -9,3 +9,4 @@ Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
 
 A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
 1:41:10 PM [vite] changed tsconfig file detected: /Users/dmitrijsibanov/Desktop/My projects/KanBe/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
+1:45:10 PM [vite] changed tsconfig file detected: /Users/dmitrijsibanov/Desktop/My projects/KanBe/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.

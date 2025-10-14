@@ -71,16 +71,17 @@ app.use((req, res, next) => {
 
   // Function to find available port starting from preferred port
   async function findAvailablePort(startPort: number): Promise<number> {
+    const maxPort = 5100; // Maximum port to try
     let port = startPort;
 
-    while (port < startPort + 100) { // Try up to 100 ports
+    while (port <= maxPort) {
       if (await checkPortAvailable(port)) {
         return port;
       }
       port++;
     }
 
-    throw new Error(`No available ports found in range ${startPort}-${startPort + 99}`);
+    throw new Error(`No available ports found in range ${startPort}-${maxPort}`);
   }
 
   // Use PORT from environment, default to 5005 for both development and production

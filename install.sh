@@ -303,25 +303,7 @@ check_port_availability() {
 create_config() {
     print_step "Создание файла конфигурации..."
 
-    # Запрос параметров
-    while true; do
-        read -p "Введите порт для API сервера (по умолчанию 5000): " API_PORT
-        API_PORT=${API_PORT:-5000}
-
-        if check_port_availability $API_PORT "API сервер"; then
-            break
-        fi
-    done
-
-    while true; do
-        read -p "Введите порт для фронтенда (по умолчанию 3000): " DEV_PORT
-        DEV_PORT=${DEV_PORT:-3000}
-
-        if check_port_availability $DEV_PORT "фронтенд"; then
-            break
-        fi
-    done
-
+    # Генерация секрета для сессий
     read -p "Введите секрет для сессий (оставьте пустым для генерации): " SESSION_SECRET
     if [ -z "$SESSION_SECRET" ]; then
         if command -v openssl &> /dev/null; then
@@ -332,13 +314,13 @@ create_config() {
         print_info "Сгенерирован секрет сессии: $SESSION_SECRET"
     fi
 
-    # Создание .env файла
+    # Создание .env файла с портом по умолчанию 5005
     cat > .env << EOF
 NODE_ENV=production
-PORT=$API_PORT
+PORT=5005
 SESSION_SECRET=$SESSION_SECRET
 DATABASE_URL=./data/kanbe.db
-DEV_PORT=$DEV_PORT
+DEV_PORT=3000
 PLATFORM=$PLATFORM
 CPU_ARCH=$CPU_ARCH
 SINGLE_USER=$SINGLE_USER
@@ -662,8 +644,8 @@ main() {
     echo "  Продакшн: npm run start"
     echo ""
     echo "Порты:"
-    echo "  API: $API_PORT"
-    echo "  Фронтенд: $DEV_PORT"
+    echo "  API: 5005 (автоматически найден свободный порт при запуске)"
+    echo "  Фронтенд: 3000"
     if [ "$SINGLE_USER" = "true" ] && [ -n "$ADMIN_EMAIL" ]; then
         echo "  Администратор: $ADMIN_EMAIL"
     fi
@@ -673,7 +655,8 @@ main() {
     echo -e "${BLUE}🔄 Запуск KanBe...${NC}"
     if command -v npm &> /dev/null; then
         echo -e "${CYAN}🌐 После запуска откройте браузер и перейдите по адресу:${NC}"
-        echo -e "${CYAN}   http://localhost:$API_PORT${NC}"
+        echo -e "${CYAN}   http://localhost:5005${NC}"
+        echo -e "${CYAN}   (или другой порт, если 5005 занят - сервер автоматически найдет свободный)${NC}"
         echo ""
         echo -e "${YELLOW}💡 Для остановки сервера нажмите Ctrl+C${NC}"
         echo ""
