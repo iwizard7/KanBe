@@ -667,6 +667,27 @@ main() {
     if [ "$SINGLE_USER" = "true" ] && [ -n "$ADMIN_EMAIL" ]; then
         echo "  Администратор: $ADMIN_EMAIL"
     fi
+
+    # Запуск приложения после установки
+    echo ""
+    echo -e "${BLUE}🔄 Запуск KanBe...${NC}"
+    if command -v npm &> /dev/null; then
+        npm run start &
+        SERVER_PID=$!
+        echo -e "${GREEN}✅ KanBe запущен (PID: $SERVER_PID)${NC}"
+        echo ""
+        echo -e "${CYAN}🌐 Откройте браузер и перейдите по адресу:${NC}"
+        echo -e "${CYAN}   http://localhost:$API_PORT${NC}"
+        echo ""
+        echo -e "${YELLOW}💡 Для остановки сервера нажмите Ctrl+C${NC}"
+        echo ""
+        echo -e "${PURPLE}🎉 Установка и запуск завершены успешно!${NC}"
+
+        # Ожидание завершения сервера
+        wait $SERVER_PID
+    else
+        echo -e "${YELLOW}⚠️  NPM не найден. Запустите приложение вручную командой: npm run start${NC}"
+    fi
 }
 
 # Запуск основной функции
