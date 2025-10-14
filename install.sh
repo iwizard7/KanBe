@@ -341,8 +341,9 @@ download_code() {
     print_step "Загрузка кода проекта..."
 
     if command -v git &> /dev/null; then
-        # Проверяем, пуста ли директория
-        if [ -z "$(ls -A . 2>/dev/null)" ]; then
+        # Проверяем, пуста ли директория (исключая системные файлы macOS)
+        NON_SYSTEM_FILES=$(ls -A . 2>/dev/null | grep -v '^\.DS_Store$')
+        if [ -z "$NON_SYSTEM_FILES" ]; then
             git clone https://github.com/iwizard7/KanBe.git .
             if [ $? -eq 0 ]; then
                 print_success "Код проекта загружен"
@@ -351,7 +352,8 @@ download_code() {
                 exit 1
             fi
         else
-            print_error "Директория не пустая. Очистите директорию или выберите другую для установки"
+            print_error "Директория не пустая. Найдены файлы: $(ls -la . | grep -v '^\.DS_Store$')"
+            print_error "Очистите директорию или выберите другую для установки"
             exit 1
         fi
     else
