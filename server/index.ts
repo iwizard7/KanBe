@@ -71,7 +71,7 @@ app.use((req, res, next) => {
 
   // Function to find available port starting from preferred port
   async function findAvailablePort(startPort: number): Promise<number> {
-    const maxPort = 5100; // Maximum port to try
+    const maxPort = startPort + 5; // Try only 5 additional ports
     let port = startPort;
 
     while (port <= maxPort) {
@@ -90,15 +90,15 @@ app.use((req, res, next) => {
 
   try {
     const port = await findAvailablePort(preferredPort);
-    if (port !== preferredPort) {
-      log(`Port ${preferredPort} is busy, using port ${port} instead`);
-    }
 
     const serverInstance = server.listen({
       port,
       host: "0.0.0.0",
       reusePort: true,
     }, () => {
+      if (port !== preferredPort) {
+        log(`Port ${preferredPort} is busy, using port ${port} instead`);
+      }
       log(`serving on port ${port}`);
     });
 

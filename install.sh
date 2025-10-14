@@ -644,7 +644,7 @@ main() {
     echo "  Продакшн: npm run start"
     echo ""
     echo "Порты:"
-    echo "  API: 5005 (автоматически найден свободный порт при запуске)"
+    echo "  API: 5005-5010 (автоматически найден свободный порт при запуске)"
     echo "  Фронтенд: 3000"
     if [ "$SINGLE_USER" = "true" ] && [ -n "$ADMIN_EMAIL" ]; then
         echo "  Администратор: $ADMIN_EMAIL"
