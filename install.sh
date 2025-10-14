@@ -260,16 +260,67 @@ select_installation_type() {
     esac
 }
 
+# Проверка доступности порта
+check_port_availability() {
+    local port=$1
+    local service_name=$2
+
+    if command -v lsof &> /dev/null; then
+        local process_info=$(lsof -i :$port 2>/dev/null)
+        if [ $? -eq 0 ] && [ -n "$process_info" ]; then
+            print_warning "Порт $port уже используется:"
+            echo "$process_info" | head -n 2
+            read -p "Убить процесс, использующий порт $port? (y/n): " KILL_PROCESS
+            if [[ $KILL_PROCESS =~ ^[Yy]$ ]]; then
+                local pid=$(echo "$process_info" | awk 'NR==2 {print $2}')
+                if kill -9 $pid 2>/dev/null; then
+                    print_success "Процесс убит (PID: $pid)"
+                    sleep 2
+                else
+                    print_error "Не удалось убить процесс"
+                    return 1
+                fi
+            else
+                print_info "Продолжаем с текущим портом"
+            fi
+        fi
+    elif command -v netstat &> /dev/null; then
+        if netstat -tuln 2>/dev/null | grep -q ":$port "; then
+            print_warning "Порт $port уже используется"
+            read -p "Продолжить с этим портом? (y/n): " CONTINUE_ANYWAY
+            if [[ ! $CONTINUE_ANYWAY =~ ^[Yy]$ ]]; then
+                return 1
+            fi
+        fi
+    else
+        print_warning "Не удалось проверить доступность порта $port (lsof/netstat не найдены)"
+    fi
+
+    return 0
+}
+
 # Создание файла конфигурации
 create_config() {
     print_step "Создание файла конфигурации..."
 
     # Запрос параметров
-    read -p "Введите порт для API сервера (по умолчанию 5000): " API_PORT
-    API_PORT=${API_PORT:-5000}
+    while true; do
+        read -p "Введите порт для API сервера (по умолчанию 5000): " API_PORT
+        API_PORT=${API_PORT:-5000}
 
-    read -p "Введите порт для фронтенда (по умолчанию 3000): " DEV_PORT
-    DEV_PORT=${DEV_PORT:-3000}
+        if check_port_availability $API_PORT "API сервер"; then
+            break
+        fi
+    done
+
+    while true; do
+        read -p "Введите порт для фронтенда (по умолчанию 3000): " DEV_PORT
+        DEV_PORT=${DEV_PORT:-3000}
+
+        if check_port_availability $DEV_PORT "фронтенд"; then
+            break
+        fi
+    done
 
     read -p "Введите секрет для сессий (оставьте пустым для генерации): " SESSION_SECRET
     if [ -z "$SESSION_SECRET" ]; then
