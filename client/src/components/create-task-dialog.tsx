@@ -18,7 +18,7 @@ import { TAG_COLORS } from "@shared/schema";
 interface CreateTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateTask: (data: { title: string; description: string; tags: string[]; status?: string }) => void;
+  onCreateTask: (data: { title: string; description: string; tags: string; status?: string }) => void;
   defaultStatus?: string;
 }
 
@@ -36,11 +36,11 @@ export function CreateTaskDialog({
 
   const handleSubmit = () => {
     if (!title.trim()) return;
-    
+
     onCreateTask({
       title: title.trim(),
       description: description.trim(),
-      tags: selectedTags,
+      tags: JSON.stringify(selectedTags),
       status: defaultStatus,
     });
 

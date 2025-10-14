@@ -10,3 +10,11 @@ Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
 A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
 1:41:10 PM [vite] changed tsconfig file detected: /Users/dmitrijsibanov/Desktop/My projects/KanBe/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
 1:45:10 PM [vite] changed tsconfig file detected: /Users/dmitrijsibanov/Desktop/My projects/KanBe/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
+3:59:06 PM [vite] hmr update /src/pages/login.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv
+4:12:48 PM [vite] hmr update /src/components/create-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv
+4:12:55 PM [vite] hmr update /src/components/create-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv
+4:12:55 PM [vite] hmr update /src/components/create-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv
+4:13:05 PM [vite] hmr update /src/components/edit-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv
+4:13:13 PM [vite] hmr update /src/components/edit-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv
+4:13:13 PM [vite] hmr update /src/components/edit-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv
+4:13:20 PM [vite] hmr update /src/components/edit-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv

@@ -18,7 +18,7 @@ import { TAG_COLORS, type Task } from "@shared/schema";
 interface EditTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdateTask: (data: { id: string; title: string; description: string; tags: string[] }) => void;
+  onUpdateTask: (data: { id: string; title: string; description: string; tags: string }) => void;
   task: Task | null;
 }
 
@@ -38,18 +38,23 @@ export function EditTaskDialog({
     if (task) {
       setTitle(task.title);
       setDescription(task.description || "");
-      setSelectedTags(task.tags || []);
+      try {
+        const parsedTags = typeof task.tags === 'string' ? JSON.parse(task.tags) : [];
+        setSelectedTags(parsedTags || []);
+      } catch {
+        setSelectedTags([]);
+      }
     }
   }, [task]);
 
   const handleSubmit = () => {
     if (!title.trim() || !task) return;
-    
+
     onUpdateTask({
       id: task.id,
       title: title.trim(),
       description: description.trim(),
-      tags: selectedTags,
+      tags: JSON.stringify(selectedTags),
     });
 
     onOpenChange(false);

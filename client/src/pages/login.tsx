@@ -28,7 +28,18 @@ export default function Login() {
           title: "Вход выполнен",
           description: "Добро пожаловать!",
         });
-        navigate("/board");
+
+        // Небольшая задержка для установки сессии
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Проверяем аутентификацию перед редиректом
+        try {
+          await apiRequest("GET", "/api/auth/user");
+          navigate("/board");
+        } catch {
+          // Если проверка не удалась, все равно пробуем перейти
+          navigate("/board");
+        }
       } else {
         await apiRequest("POST", "/api/auth/register", {
           email,
