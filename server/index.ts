@@ -1,7 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import net from "net";
 
 const app = express();
 app.use(express.json());
@@ -57,77 +56,15 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Function to check if port is available
-  function checkPortAvailable(port: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      const server = net.createServer();
-      server.listen(port, () => {
-        server.once('close', () => resolve(true));
-        server.close();
-      });
-      server.on('error', () => resolve(false));
-    });
-  }
-
-  // Function to find available port starting from preferred port
-  async function findAvailablePort(startPort: number): Promise<number> {
-    const maxPort = startPort + 5; // Try only 5 additional ports
-    let port = startPort;
-
-    while (port <= maxPort) {
-      if (await checkPortAvailable(port)) {
-        return port;
-      }
-      port++;
-    }
-
-    throw new Error(`No available ports found in range ${startPort}-${maxPort}`);
-  }
-
-  // Use PORT from environment, default to 5005 for both development and production
+  // Use PORT from environment, default to 5010 for both development and production
   // This serves both the API and the client
-  const preferredPort = parseInt(process.env.PORT || '5005', 10);
+  const port = parseInt(process.env.PORT || '5010', 10);
 
-  try {
-    const port = await findAvailablePort(preferredPort);
-
-    const serverInstance = server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
-      if (port !== preferredPort) {
-        log(`Port ${preferredPort} is busy, using port ${port} instead`);
-      }
-      log(`serving on port ${port}`);
-    });
-
-    // Handle server errors
-    serverInstance.on('error', (error: any) => {
-      if (error.code === 'EADDRINUSE') {
-        log(`Port ${port} is already in use. Trying next available port...`);
-        // If still getting address in use, try to find another port
-        findAvailablePort(port + 1).then((newPort) => {
-          serverInstance.close();
-          const newServerInstance = server.listen({
-            port: newPort,
-            host: "0.0.0.0",
-            reusePort: true,
-          }, () => {
-            log(`serving on port ${newPort}`);
-          });
-        }).catch((err) => {
-          log(`Error finding available port: ${err}`);
-          process.exit(1);
-        });
-      } else {
-        log(`Server error: ${error}`);
-        process.exit(1);
-      }
-    });
-
-  } catch (error) {
-    log(`Error finding available port: ${error}`);
-    process.exit(1);
-  }
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  }, () => {
+    log(`serving on port ${port}`);
+  });
 })();

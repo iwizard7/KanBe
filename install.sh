@@ -314,10 +314,10 @@ create_config() {
         print_info "Сгенерирован секрет сессии: $SESSION_SECRET"
     fi
 
-    # Создание .env файла с портом по умолчанию 5005
+    # Создание .env файла с фиксированными портами
     cat > .env << EOF
 NODE_ENV=production
-PORT=5005
+PORT=5010
 SESSION_SECRET=$SESSION_SECRET
 DATABASE_URL=./data/kanbe.db
 DEV_PORT=3000
@@ -644,7 +644,7 @@ main() {
     echo "  Продакшн: npm run start"
     echo ""
     echo "Порты:"
-    echo "  API: 5005-5010 (автоматически найден свободный порт при запуске)"
+    echo "  API: 5010"
     echo "  Фронтенд: 3000"
     if [ "$SINGLE_USER" = "true" ] && [ -n "$ADMIN_EMAIL" ]; then
         echo "  Администратор: $ADMIN_EMAIL"
@@ -655,8 +655,7 @@ main() {
     echo -e "${BLUE}🔄 Запуск KanBe...${NC}"
     if command -v npm &> /dev/null; then
         echo -e "${CYAN}🌐 После запуска откройте браузер и перейдите по адресу:${NC}"
-        echo -e "${CYAN}   http://localhost:5005${NC}"
-        echo -e "${CYAN}   (или другой порт, если 5005 занят - сервер автоматически найдет свободный)${NC}"
+        echo -e "${CYAN}   http://localhost:5010${NC}"
         echo ""
         echo -e "${YELLOW}💡 Для остановки сервера нажмите Ctrl+C${NC}"
         echo ""
