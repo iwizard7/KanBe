@@ -317,6 +317,20 @@ download_code() {
 
     print_step "Загрузка кода проекта..."
 
+    # Проверка, пустая ли директория
+    if [ "$(ls -A .)" ]; then
+        print_warning "Директория не пустая. Для установки KanBe требуется пустая директория."
+        read -p "Очистить директорию перед загрузкой кода? (y/n): " CLEAR_DIR
+        if [[ $CLEAR_DIR =~ ^[Yy]$ ]]; then
+            print_info "Очистка директории..."
+            rm -rf ./*
+            rm -rf ./.*
+        else
+            print_error "Установка отменена. Пожалуйста, запустите установщик в пустой директории."
+            exit 1
+        fi
+    fi
+
     if command -v git &> /dev/null; then
         git clone https://github.com/iwizard7/KanBe.git .
         if [ $? -eq 0 ]; then
