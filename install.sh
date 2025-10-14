@@ -334,7 +334,20 @@ build_application() {
     print_step "Сборка приложения..."
 
     if command -v npm &> /dev/null; then
-        npm run build
+        # Проверяем наличие vite локально
+        if [ -f "node_modules/.bin/vite" ]; then
+            print_info "Используем локальный vite для сборки..."
+            npm run build
+        else
+            print_warning "Локальный vite не найден, пытаемся использовать глобальный..."
+            if command -v vite &> /dev/null; then
+                npm run build
+            else
+                print_warning "Vite не найден глобально, устанавливаем локально..."
+                npm install --save-dev vite
+                npm run build
+            fi
+        fi
         print_success "Приложение собрано"
     else
         print_warning "NPM не найден, пропуск сборки"
@@ -523,13 +536,13 @@ create_first_user() {
     cat > create_admin.js << 'EOF'
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as schema from './shared/schema.js';
+import { users } from './shared/schema.js';
 import bcrypt from 'bcrypt';
 
 console.log('Создание администратора...');
 
 const sqlite = new Database('./kanbe.db');
-const db = drizzle({ client: sqlite, schema });
+const db = drizzle({ client: sqlite });
 
 async function createAdmin() {
     const email = process.argv[2];
@@ -553,7 +566,7 @@ async function createAdmin() {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const [user] = await db
-            .insert(schema.users)
+            .insert(users)
             .values({
                 email,
                 password: hashedPassword,
@@ -576,9 +589,10 @@ async function createAdmin() {
 createAdmin();
 EOF
 
-    # Запуск скрипта создания пользователя
+    # Запуск скрипта создания пользователя с правильным путем к node_modules
     if [ -f "create_admin.js" ]; then
-        npx tsx create_admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD"
+        # Используем локальный tsx из node_modules вместо глобального
+        ./node_modules/.bin/tsx create_admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD"
         rm -f create_admin.js
         print_success "Администратор создан: $ADMIN_EMAIL"
     else
