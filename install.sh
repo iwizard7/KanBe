@@ -230,6 +230,36 @@ setup_database() {
     fi
 }
 
+# Запрос типа установки (один пользователь или несколько)
+select_installation_type() {
+    print_step "Выбор типа установки..."
+
+    echo ""
+    echo "=== Тип установки ==="
+    echo "Выберите тип установки:"
+    echo "1) Для одного пользователя (отключить регистрацию в UI)"
+    echo "2) Для нескольких пользователей (включить регистрацию в UI)"
+    echo ""
+    read -p "Выберите тип (1 или 2): " INSTALL_TYPE
+
+    case $INSTALL_TYPE in
+        "1")
+            SINGLE_USER=true
+            print_info "Выбрана установка для одного пользователя"
+            print_info "Регистрация в UI будет отключена"
+            ;;
+        "2")
+            SINGLE_USER=false
+            print_info "Выбрана установка для нескольких пользователей"
+            print_info "Регистрация в UI будет включена"
+            ;;
+        *)
+            print_warning "Неверный выбор, используется установка для нескольких пользователей"
+            SINGLE_USER=false
+            ;;
+    esac
+}
+
 # Создание файла конфигурации
 create_config() {
     print_step "Создание файла конфигурации..."
@@ -260,6 +290,7 @@ DATABASE_URL=./data/kanbe.db
 DEV_PORT=$DEV_PORT
 PLATFORM=$PLATFORM
 CPU_ARCH=$CPU_ARCH
+SINGLE_USER=$SINGLE_USER
 EOF
 
     print_success "Файл конфигурации создан"
@@ -277,13 +308,148 @@ build_application() {
     fi
 }
 
+# Запрос директории установки
+select_installation_directory() {
+    print_step "Выбор директории установки..."
+
+    echo ""
+    echo "=== Директория установки ==="
+    echo "📁 Текущая директория: $(pwd)"
+    echo ""
+    read -p "Установить KanBe в текущую директорию? (y/n): " USE_CURRENT_DIR
+
+    if [[ $USE_CURRENT_DIR =~ ^[Nn]$ ]]; then
+        read -p "Введите путь для установки KanBe: " INSTALL_DIR
+
+        # Проверка существования директории
+        if [ ! -d "$INSTALL_DIR" ]; then
+            echo "Директория $INSTALL_DIR не существует."
+            read -p "Создать директорию? (y/n): " CREATE_DIR
+            if [[ $CREATE_DIR =~ ^[Yy]$ ]]; then
+                if ! mkdir -p "$INSTALL_DIR"; then
+                    print_error "Ошибка создания директории $INSTALL_DIR"
+                    exit 1
+                fi
+                print_success "Директория $INSTALL_DIR создана"
+            else
+                print_error "Установка отменена"
+                exit 1
+            fi
+        fi
+
+        # Проверка прав записи в директорию
+        if [ ! -w "$INSTALL_DIR" ]; then
+            print_error "Ошибка: нет прав записи в директорию $INSTALL_DIR"
+            exit 1
+        fi
+
+        # Переход в выбранную директорию
+        if ! cd "$INSTALL_DIR"; then
+            print_error "Ошибка перехода в директорию $INSTALL_DIR"
+            exit 1
+        fi
+
+        print_success "KanBe будет установлен в: $(pwd)"
+    else
+        print_success "KanBe будет установлен в текущую директорию: $(pwd)"
+    fi
+}
+
+# Создание первого пользователя (только для single user установки)
+create_first_user() {
+    # Пропускаем создание пользователя если не single user режим
+    if [ "$SINGLE_USER" != "true" ]; then
+        print_info "Пропуск создания пользователя (режим нескольких пользователей)"
+        return 0
+    fi
+
+    print_step "Создание первого пользователя..."
+
+    echo ""
+    echo "=== Создание администратора ==="
+    read -p "Email для администратора: " ADMIN_EMAIL
+    read -s -p "Пароль для администратора: " ADMIN_PASSWORD
+    echo ""
+
+    if [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]; then
+        print_warning "Email и пароль обязательны для single user режима"
+        return 1
+    fi
+
+    # Создание временного скрипта для создания пользователя
+    cat > create_admin.js << EOF
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import * as schema from '${PROJECT_DIR}/shared/schema.js';
+import bcrypt from 'bcrypt';
+
+console.log('Создание администратора...');
+
+const sqlite = new Database('${PROJECT_DIR}/data/kanbe.db');
+const db = drizzle({ client: sqlite, schema });
+
+async function createAdmin() {
+    const email = process.argv[2];
+    const password = process.argv[3];
+
+    if (!email || !password) {
+        console.error('Использование: node create_admin.js <email> <password>');
+        process.exit(1);
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const [user] = await db
+            .insert(schema.users)
+            .values({
+                email,
+                password: hashedPassword,
+                firstName: 'Admin',
+                lastName: 'User',
+            })
+            .returning();
+
+        console.log('✅ Пользователь создан успешно');
+        console.log('📧 Email:', email);
+        console.log('🆔 ID пользователя:', user.id);
+    } catch (error) {
+        console.error('❌ Ошибка создания пользователя:', error.message);
+    } finally {
+        sqlite.close();
+    }
+}
+
+createAdmin();
+EOF
+
+    # Запуск скрипта создания пользователя
+    if [ -f "create_admin.js" ]; then
+        node create_admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD"
+        rm -f create_admin.js
+        print_success "Администратор создан: $ADMIN_EMAIL"
+    else
+        print_error "Ошибка: файл create_admin.js не создан"
+        return 1
+    fi
+}
+
 # Основная функция установки
 main() {
     # Определение платформы
     detect_platform
 
+    # Выбор директории установки
+    select_installation_directory
+
+    # Обновление переменных директорий
+    PROJECT_DIR="$(pwd)"
+
     # Проверка требований
     check_requirements
+
+    # Выбор типа установки (один/несколько пользователей)
+    select_installation_type
 
     # Установка Node.js
     install_nodejs
@@ -300,6 +466,9 @@ main() {
     # Создание конфигурации
     create_config
 
+    # Создание первого пользователя (если single user режим)
+    create_first_user
+
     # Сборка приложения
     build_application
 
@@ -310,6 +479,7 @@ main() {
     echo "   Платформа: $PLATFORM"
     echo "   Архитектура: $CPU_ARCH"
     echo "   Директория: $(pwd)"
+    echo "   Тип установки: $([ "$SINGLE_USER" = "true" ] && echo "Один пользователь" || echo "Несколько пользователей")"
     echo ""
     echo -e "${GREEN}🚀 KanBe готов к запуску!${NC}"
     echo ""
@@ -320,6 +490,9 @@ main() {
     echo "Порты:"
     echo "  API: $API_PORT"
     echo "  Фронтенд: $DEV_PORT"
+    if [ "$SINGLE_USER" = "true" ] && [ -n "$ADMIN_EMAIL" ]; then
+        echo "  Администратор: $ADMIN_EMAIL"
+    fi
 }
 
 # Запуск основной функции
