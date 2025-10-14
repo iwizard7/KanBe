@@ -480,16 +480,22 @@ create_first_user() {
         return 1
     fi
 
+    # Проверяем, что база данных существует и таблицы созданы
+    if [ ! -f "kanbe.db" ]; then
+        print_error "База данных не найдена. Убедитесь, что настройка БД выполнена."
+        return 1
+    fi
+
     # Создание временного скрипта для создания пользователя
     cat > create_admin.js << EOF
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as schema from '${PROJECT_DIR}/shared/schema.js';
+import * as schema from './shared/schema.js';
 import bcrypt from 'bcrypt';
 
 console.log('Создание администратора...');
 
-const sqlite = new Database('${PROJECT_DIR}/data/kanbe.db');
+const sqlite = new Database('./kanbe.db');
 const db = drizzle({ client: sqlite, schema });
 
 async function createAdmin() {
@@ -502,6 +508,15 @@ async function createAdmin() {
     }
 
     try {
+        // Проверяем существование таблицы users
+        const tables = sqlite.pragma('table_list');
+        const usersTableExists = tables.some((table: any) => table.name === 'users');
+
+        if (!usersTableExists) {
+            console.error('❌ Таблица users не существует. Сначала настройте базу данных командой: npm run db:push');
+            process.exit(1);
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const [user] = await db
@@ -519,6 +534,7 @@ async function createAdmin() {
         console.log('🆔 ID пользователя:', user.id);
     } catch (error) {
         console.error('❌ Ошибка создания пользователя:', error.message);
+        process.exit(1);
     } finally {
         sqlite.close();
     }
