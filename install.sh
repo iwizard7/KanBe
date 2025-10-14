@@ -529,7 +529,7 @@ EOF
 
     # Запуск скрипта создания пользователя
     if [ -f "create_admin.js" ]; then
-        node create_admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD"
+        npx tsx create_admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD"
         rm -f create_admin.js
         print_success "Администратор создан: $ADMIN_EMAIL"
     else
