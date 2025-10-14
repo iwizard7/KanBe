@@ -18,3 +18,4 @@ A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cau
 4:13:13 PM [vite] hmr update /src/components/edit-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv
 4:13:13 PM [vite] hmr update /src/components/edit-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv
 4:13:20 PM [vite] hmr update /src/components/edit-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv
+5:09:18 PM [vite] hmr update /src/components/edit-task-dialog.tsx, /src/index.css?v=XXXs1Xqy5DTB2DsT1tJFv, /src/components/create-task-dialog.tsx, /src/components/task-card.tsx

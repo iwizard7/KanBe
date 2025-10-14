@@ -64,6 +64,8 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  tags: z.string().default('[]'), // Override to expect string (JSON)
 });
 
 export const updateTaskSchema = insertTaskSchema.partial().extend({
