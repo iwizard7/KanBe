@@ -487,7 +487,7 @@ create_first_user() {
     fi
 
     # Создание временного скрипта для создания пользователя
-    cat > create_admin.js << EOF
+    cat > create_admin.js << 'EOF'
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from './shared/schema.js';
@@ -510,7 +510,7 @@ async function createAdmin() {
     try {
         // Проверяем существование таблицы users
         const tables = sqlite.pragma('table_list');
-        const usersTableExists = tables.some((table: any) => table.name === 'users');
+        const usersTableExists = tables.some(table => table.name === 'users');
 
         if (!usersTableExists) {
             console.error('❌ Таблица users не существует. Сначала настройте базу данных командой: npm run db:push');
