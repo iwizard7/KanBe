@@ -672,19 +672,16 @@ main() {
     echo ""
     echo -e "${BLUE}🔄 Запуск KanBe...${NC}"
     if command -v npm &> /dev/null; then
-        npm run start &
-        SERVER_PID=$!
-        echo -e "${GREEN}✅ KanBe запущен (PID: $SERVER_PID)${NC}"
-        echo ""
-        echo -e "${CYAN}🌐 Откройте браузер и перейдите по адресу:${NC}"
+        echo -e "${CYAN}🌐 После запуска откройте браузер и перейдите по адресу:${NC}"
         echo -e "${CYAN}   http://localhost:$API_PORT${NC}"
         echo ""
         echo -e "${YELLOW}💡 Для остановки сервера нажмите Ctrl+C${NC}"
         echo ""
-        echo -e "${PURPLE}🎉 Установка и запуск завершены успешно!${NC}"
+        echo -e "${PURPLE}🎉 Установка завершена! Запуск приложения...${NC}"
+        echo ""
 
-        # Ожидание завершения сервера
-        wait $SERVER_PID
+        # Запуск сервера в foreground (не в background)
+        npm run start
     else
         echo -e "${YELLOW}⚠️  NPM не найден. Запустите приложение вручную командой: npm run start${NC}"
     fi
