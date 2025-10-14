@@ -308,6 +308,50 @@ build_application() {
     fi
 }
 
+# Проверка системных требований
+check_requirements() {
+    print_step "Проверка системных требований..."
+
+    case $PLATFORM in
+        "macos")
+            # Проверка Xcode Command Line Tools для macOS
+            if ! command -v clang &> /dev/null; then
+                print_warning "Xcode Command Line Tools не найдены"
+                read -p "Установить Xcode Command Line Tools? (y/n): " INSTALL_XCODE
+                if [[ $INSTALL_XCODE =~ ^[Yy]$ ]]; then
+                    print_info "Установка Xcode Command Line Tools..."
+                    xcode-select --install
+                    print_success "Xcode Command Line Tools установлены"
+                else
+                    print_error "Xcode Command Line Tools необходимы для сборки нативных модулей"
+                    exit 1
+                fi
+            else
+                print_success "Xcode Command Line Tools найдены"
+            fi
+            ;;
+        "linux"|"raspberry-pi")
+            # Проверка build-essential для Linux
+            if ! dpkg -l | grep -q build-essential; then
+                print_warning "build-essential не установлен"
+                if command -v apt-get &> /dev/null; then
+                    print_info "Установка build-essential..."
+                    sudo apt-get update
+                    sudo apt-get install -y build-essential
+                    print_success "build-essential установлен"
+                else
+                    print_error "Не найден apt-get. Установите build-essential вручную"
+                    exit 1
+                fi
+            else
+                print_success "build-essential найден"
+            fi
+            ;;
+    esac
+}
+
+
+
 # Запрос директории установки
 select_installation_directory() {
     print_step "Выбор директории установки..."
