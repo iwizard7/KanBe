@@ -1,8 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, GripVertical } from "lucide-react";
-import type { Task } from "@shared/schema";
+import { Pencil, Trash2, GripVertical, CheckSquare } from "lucide-react";
+import type { Task, Subtask } from "@shared/schema";
 import { TAG_COLORS } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -19,6 +19,11 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
   const tagsArray = task.tags ? JSON.parse(task.tags) : [];
   const visibleTags = tagsArray.slice(0, 3);
   const remainingCount = tagsArray.length - 3;
+
+  // Parse subtasks from JSON string to array
+  const subtasks: Subtask[] = task.subtasks ? JSON.parse(task.subtasks) : [];
+  const completedSubtasks = subtasks.filter(subtask => subtask.completed).length;
+  const totalSubtasks = subtasks.length;
 
   const getTagColor = (tagName: string) => {
     // Extract color from tag format "colorName:labelText" or just "labelText"
@@ -77,6 +82,16 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
         <p className="text-sm text-muted-foreground line-clamp-3" data-testid={`text-task-description-${task.id}`}>
           {task.description}
         </p>
+      )}
+
+      {/* Subtasks */}
+      {totalSubtasks > 0 && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <CheckSquare className="w-4 h-4" />
+          <span>
+            {completedSubtasks}/{totalSubtasks} подзадач
+          </span>
+        </div>
       )}
 
       {/* Tags */}
