@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Task } from "@shared/schema";
+import type { Task, PriorityLevel } from "@shared/schema";
 import { Loader2 } from "lucide-react";
 
 const COLUMNS = [
@@ -45,10 +45,25 @@ export default function Board() {
 
   // Create task mutation
   const createTaskMutation = useMutation({
-    mutationFn: async (data: { title: string; description: string; tags: string[]; status?: string }) => {
+    mutationFn: async (data: {
+      title: string;
+      description: string;
+      tags: string[];
+      priority?: PriorityLevel;
+      dueDate?: Date;
+      subtasks?: string[];
+      status?: string;
+    }) => {
       return await apiRequest('POST', '/api/tasks', {
         ...data,
         tags: JSON.stringify(data.tags),
+        subtasks: data.subtasks ? JSON.stringify(data.subtasks.map(title => ({
+          id: crypto.randomUUID(),
+          title,
+          completed: false,
+          createdAt: Date.now()
+        }))) : undefined,
+        dueDate: data.dueDate ? Math.floor(data.dueDate.getTime() / 1000) : undefined,
       });
     },
     onSuccess: () => {
