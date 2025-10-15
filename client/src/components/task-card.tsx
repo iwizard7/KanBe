@@ -187,12 +187,31 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
             </div>
           )}
         </div>
-        <span data-testid={`text-task-date-${task.id}`}>
-          {formatDistanceToNow(new Date(task.createdAt * 1000), {
-            addSuffix: true,
-            locale: ru
-          })}
-        </span>
+        <div className="text-right">
+          {task.lastMovedAt && task.lastMovedAt !== task.createdAt ? (
+            <div>
+              <div className="text-muted-foreground">
+                Перемещена {formatDistanceToNow(new Date(task.lastMovedAt * 1000), {
+                  addSuffix: true,
+                  locale: ru
+                })}
+              </div>
+              <div className="text-muted-foreground/70">
+                Создана {formatDistanceToNow(new Date(task.createdAt * 1000), {
+                  addSuffix: true,
+                  locale: ru
+                })}
+              </div>
+            </div>
+          ) : (
+            <span data-testid={`text-task-date-${task.id}`}>
+              {formatDistanceToNow(new Date(task.createdAt * 1000), {
+                addSuffix: true,
+                locale: ru
+              })}
+            </span>
+          )}
+        </div>
       </div>
     </Card>
   );

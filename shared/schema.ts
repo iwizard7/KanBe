@@ -46,6 +46,7 @@ export const tasks = sqliteTable("tasks", {
   priority: text("priority").default('medium'), // 'low', 'medium', 'high', 'urgent'
   dueDate: real("due_date"), // Unix timestamp for deadline
   subtasks: text("subtasks").default('[]'), // JSON array of subtasks
+  lastMovedAt: real("last_moved_at"), // Unix timestamp of last status change
   createdAt: real("created_at").default(sql`(strftime('%s', 'now'))`).notNull(),
   updatedAt: real("updated_at").default(sql`(strftime('%s', 'now'))`).notNull(),
 });

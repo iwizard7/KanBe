@@ -149,6 +149,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         status,
         position,
+        lastMovedAt: sql`(strftime('%s', 'now'))`,
         updatedAt: sql`(strftime('%s', 'now'))`,
       })
       .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
