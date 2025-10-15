@@ -10,6 +10,7 @@ import {
 import { useTheme } from "next-themes";
 import { LogOut, User as UserIcon, Moon, Sun, Monitor } from "lucide-react";
 import type { User } from "@shared/schema";
+import logo from "@/assets/logo.png";
 
 interface NavbarProps {
   user?: User;
@@ -29,11 +30,13 @@ export function Navbar({ user }: NavbarProps) {
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">К</span>
-          </div>
+          <img
+            src={logo}
+            alt="KanBe Logo"
+            className="w-8 h-8 rounded-lg object-cover"
+          />
           <h1 className="text-xl font-semibold" data-testid="text-app-title">
-            Канбан Доска
+            KanBe
           </h1>
         </div>
 
