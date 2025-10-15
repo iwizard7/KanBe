@@ -713,7 +713,10 @@ create_launchd_service() {
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
-    <true/>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
     <key>StandardOutPath</key>
     <string>$WORKING_DIR/kanbe.log</string>
     <key>StandardErrorPath</key>
