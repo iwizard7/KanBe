@@ -43,6 +43,9 @@ export const tasks = sqliteTable("tasks", {
   status: text("status").notNull().default('todo'), // 'todo', 'in-progress', 'done'
   position: integer("position").notNull().default(0), // for ordering within column
   tags: text("tags").default('[]'), // JSON string for array
+  priority: text("priority").default('medium'), // 'low', 'medium', 'high', 'urgent'
+  dueDate: real("due_date"), // Unix timestamp for deadline
+  subtasks: text("subtasks").default('[]'), // JSON array of subtasks
   createdAt: real("created_at").default(sql`(strftime('%s', 'now'))`).notNull(),
   updatedAt: real("updated_at").default(sql`(strftime('%s', 'now'))`).notNull(),
 });
@@ -91,4 +94,21 @@ export const TAG_COLORS = [
   { name: 'gray', label: 'Серый', bg: 'bg-[hsl(215,10%,50%)]', text: 'text-[hsl(215,10%,50%)]' },
 ] as const;
 
+// Priority levels
+export const PRIORITY_LEVELS = [
+  { name: 'low', label: 'Низкий', color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900' },
+  { name: 'medium', label: 'Средний', color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-900' },
+  { name: 'high', label: 'Высокий', color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900' },
+  { name: 'urgent', label: 'Срочный', color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900' },
+] as const;
+
 export type TagColor = typeof TAG_COLORS[number]['name'];
+export type PriorityLevel = typeof PRIORITY_LEVELS[number]['name'];
+
+// Subtask type
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: number;
+}
