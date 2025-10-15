@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { TaskCard } from "./task-card";
 import type { Task } from "@shared/schema";
+import { PRIORITY_LEVELS } from "@shared/schema";
 
 interface KanbanColumnProps {
   title: string;
@@ -48,6 +49,13 @@ export function KanbanColumn({
     e.dataTransfer.setData('taskId', taskId);
   };
 
+  // Count tasks by priority
+  const priorityCounts = tasks.reduce((acc, task) => {
+    const priority = task.priority || 'medium';
+    acc[priority] = (acc[priority] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <div className="flex flex-col w-80 flex-shrink-0">
       {/* Column Header */}
@@ -71,6 +79,27 @@ export function KanbanColumn({
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Priority Summary */}
+      {tasks.length > 0 && (
+        <div className="flex items-center gap-1 mb-3 flex-wrap">
+          {PRIORITY_LEVELS.map((priority) => {
+            const count = priorityCounts[priority.name] || 0;
+            if (count === 0) return null;
+            return (
+              <Badge
+                key={priority.name}
+                variant="outline"
+                className={`text-xs px-2 py-0.5 ${priority.bg} border-current`}
+                data-testid={`badge-priority-${priority.name}-${status}`}
+              >
+                <div className={`w-1.5 h-1.5 rounded-full mr-1 ${priority.bg}`} />
+                {priority.label}: {count}
+              </Badge>
+            );
+          })}
+        </div>
+      )}
 
       {/* Tasks Container */}
       <div
