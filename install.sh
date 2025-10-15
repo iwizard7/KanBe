@@ -650,12 +650,15 @@ main() {
     echo "   Архитектура: $CPU_ARCH"
     echo "   Директория: $(pwd)"
     echo "   Тип установки: $([ "$SINGLE_USER" = "true" ] && echo "Один пользователь" || echo "Несколько пользователей")"
+    echo "   База данных: $(pwd)/data/kanbe.db"
     echo ""
-    echo -e "${GREEN}🚀 KanBe готов к запуску!${NC}"
+    echo -e "${GREEN}🚀 KanBe готов к использованию!${NC}"
     echo ""
-    echo "Команды для запуска:"
-    echo "  Разработка: npm run dev (API) + npm run dev:client (фронтенд)"
-    echo "  Продакшн: npm run start"
+    echo "Команды для управления:"
+    echo "  Статус сервера: npm run status"
+    echo "  Перезапуск: npm run restart"
+    echo "  Остановка: npm run stop"
+    echo "  Логи: npm run logs"
     echo ""
     echo "Порты:"
     echo "  API: 5010"
@@ -663,21 +666,44 @@ main() {
     if [ "$SINGLE_USER" = "true" ] && [ -n "$ADMIN_EMAIL" ]; then
         echo "  Администратор: $ADMIN_EMAIL"
     fi
+    echo ""
+    echo -e "${YELLOW}💡 Полезные команды:${NC}"
+    echo "  Резервное копирование БД: cp data/kanbe.db data/backup_$(date +%Y%m%d_%H%M%S).db"
+    echo "  Просмотр размера БД: du -h data/kanbe.db"
 
     # Запуск приложения после установки
     echo ""
-    echo -e "${BLUE}🔄 Запуск KanBe...${NC}"
+    echo -e "${BLUE}🔄 Запуск KanBe в фоне...${NC}"
     if command -v npm &> /dev/null; then
         echo -e "${CYAN}🌐 После запуска откройте браузер и перейдите по адресу:${NC}"
         echo -e "${CYAN}   http://localhost:5010${NC}"
         echo ""
-        echo -e "${YELLOW}💡 Для остановки сервера нажмите Ctrl+C${NC}"
+        echo -e "${YELLOW}💡 Для управления сервером используйте команды:${NC}"
+        echo -e "${YELLOW}   Остановить: npm run stop${NC}"
+        echo -e "${YELLOW}   Перезапустить: npm run restart${NC}"
+        echo -e "${YELLOW}   Проверить статус: npm run status${NC}"
         echo ""
-        echo -e "${PURPLE}🎉 Установка завершена! Запуск приложения...${NC}"
+        echo -e "${PURPLE}🎉 Установка завершена! KanBe запущен в фоне.${NC}"
         echo ""
 
-        # Запуск сервера в foreground (не в background)
-        npm run start
+        # Запуск сервера в фоне с помощью PM2
+        if command -v pm2 &> /dev/null; then
+            print_info "Запуск с PM2 (рекомендуется)..."
+            npm run start:pm2
+            print_success "KanBe запущен с PM2"
+        else
+            print_warning "PM2 не найден, запускаем в фоне с nohup..."
+            nohup npm run start > kanbe.log 2>&1 &
+            SERVER_PID=$!
+            echo $SERVER_PID > kanbe.pid
+            sleep 3
+            if kill -0 $SERVER_PID 2>/dev/null; then
+                print_success "KanBe запущен в фоне (PID: $SERVER_PID)"
+            else
+                print_error "Ошибка запуска сервера"
+                cat kanbe.log
+            fi
+        fi
     else
         echo -e "${YELLOW}⚠️  NPM не найден. Запустите приложение вручную командой: npm run start${NC}"
     fi
