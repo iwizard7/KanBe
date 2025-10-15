@@ -810,7 +810,7 @@ main() {
         "macos")
             echo "Команды для управления launchd сервисом:"
             echo "  Запуск: launchctl start com.kanbe.app"
-            echo "  Остановка: launchctl stop com.kanbe.app"
+            echo "  Остановка: launchctl stop com.kanbe.app && launchctl unload ~/Library/LaunchAgents/com.kanbe.app.plist"
             echo "  Статус: launchctl list | grep kanbe"
             echo "  Логи: tail -f kanbe.log"
             echo "  Ручной запуск: node dist/index.js"
