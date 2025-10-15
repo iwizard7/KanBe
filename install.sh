@@ -303,16 +303,13 @@ check_port_availability() {
 create_config() {
     print_step "Создание файла конфигурации..."
 
-    # Генерация секрета для сессий
-    read -p "Введите секрет для сессий (оставьте пустым для генерации): " SESSION_SECRET
-    if [ -z "$SESSION_SECRET" ]; then
-        if command -v openssl &> /dev/null; then
-            SESSION_SECRET=$(openssl rand -hex 32)
-        else
-            SESSION_SECRET="default-secret-$(date +%s)"
-        fi
-        print_info "Сгенерирован секрет сессии: $SESSION_SECRET"
+    # Генерация секрета для сессий (автоматически)
+    if command -v openssl &> /dev/null; then
+        SESSION_SECRET=$(openssl rand -hex 32)
+    else
+        SESSION_SECRET="default-secret-$(date +%s)"
     fi
+    print_info "Сгенерирован секрет сессии"
 
     # Создание .env файла с фиксированными портами
     cat > .env << EOF
