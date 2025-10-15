@@ -132,16 +132,18 @@ export default function Login() {
         </form>
 
         <div className="text-center">
-          <Button
-            variant="ghost"
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-sm"
-          >
-            {isLogin
-              ? "Нет аккаунта? Зарегистрироваться"
-              : "Уже есть аккаунт? Войти"
-            }
-          </Button>
+          {process.env.NODE_ENV !== "production" && (
+            <Button
+              variant="ghost"
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-sm"
+            >
+              {isLogin
+                ? "Нет аккаунта? Зарегистрироваться"
+                : "Уже есть аккаунт? Войти"
+              }
+            </Button>
+          )}
         </div>
       </Card>
     </div>
