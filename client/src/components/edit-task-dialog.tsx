@@ -14,12 +14,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { X, Plus } from "lucide-react";
-import { TAG_COLORS, type Task, type Subtask } from "@shared/schema";
+import { TAG_COLORS, PRIORITY_LEVELS, type Task, type Subtask, type PriorityLevel } from "@shared/schema";
 
 interface EditTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdateTask: (data: { id: string; title: string; description: string; tags: string[]; subtasks?: Subtask[] }) => void;
+  onUpdateTask: (data: { id: string; title: string; description: string; tags: string[]; subtasks?: Subtask[]; priority?: PriorityLevel }) => void;
   task: Task | null;
 }
 
@@ -36,11 +36,13 @@ export function EditTaskDialog({
   const [selectedColor, setSelectedColor] = useState<string>(TAG_COLORS[0].name);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [subtaskInput, setSubtaskInput] = useState("");
+  const [priority, setPriority] = useState<PriorityLevel>("medium");
 
   useEffect(() => {
     if (task) {
       setTitle(task.title);
       setDescription(task.description || "");
+      setPriority((task.priority as PriorityLevel) || "medium");
       try {
         const parsedTags = typeof task.tags === 'string' ? JSON.parse(task.tags) : [];
         setSelectedTags(parsedTags || []);
@@ -65,6 +67,7 @@ export function EditTaskDialog({
       description: description.trim(),
       tags: selectedTags,
       subtasks,
+      priority,
     });
 
     onOpenChange(false);
@@ -202,6 +205,27 @@ export function EditTaskDialog({
             <p className="text-xs text-muted-foreground">
               Максимум 10 подзадач
             </p>
+          </div>
+
+          {/* Priority */}
+          <div className="space-y-2">
+            <Label>Приоритет</Label>
+            <div className="flex gap-2">
+              {PRIORITY_LEVELS.map((level) => (
+                <Button
+                  key={level.name}
+                  type="button"
+                  variant={priority === level.name ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPriority(level.name)}
+                  className={`flex items-center gap-1 ${priority === level.name ? level.bg : ''}`}
+                  data-testid={`button-edit-priority-${level.name}`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${level.bg}`} />
+                  {level.label}
+                </Button>
+              ))}
+            </div>
           </div>
 
           {/* Tags */}
