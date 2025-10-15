@@ -26,7 +26,7 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
   const totalSubtasks = subtasks.length;
 
   // Priority and deadline logic
-  const priority = PRIORITY_LEVELS.find(p => p.name === task.priority) || PRIORITY_LEVELS[0];
+  const priority = PRIORITY_LEVELS.find(p => p.name === task.priority) || PRIORITY_LEVELS[1]; // default to medium
   const dueDate = task.dueDate ? new Date(task.dueDate * 1000) : null;
   const now = new Date();
   const isOverdue = dueDate && isBefore(dueDate, now);
@@ -45,7 +45,12 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
     <Card
       className={`p-4 space-y-3 hover-elevate active-elevate-2 transition-all cursor-pointer group border-l-4 ${
         isDragging ? 'opacity-50 scale-105' : ''
-      } ${priority.bg.replace('bg-', 'border-l-')}`}
+      } ${
+        task.priority === 'urgent' ? 'border-l-red-500' :
+        task.priority === 'high' ? 'border-l-orange-500' :
+        task.priority === 'medium' ? 'border-l-yellow-500' :
+        'border-l-green-500'
+      }`}
       data-testid={`card-task-${task.id}`}
     >
       {/* Header with drag handle, priority, and actions */}
