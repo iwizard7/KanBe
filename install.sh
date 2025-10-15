@@ -673,8 +673,15 @@ create_launchd_service() {
     # Создание plist файла
     PLIST_FILE="$HOME/Library/LaunchAgents/com.kanbe.app.plist"
     WORKING_DIR="$(pwd)"
-    EXEC_PATH="$WORKING_DIR/node_modules/.bin/tsx"
-    SCRIPT_PATH="$WORKING_DIR/server/index.ts"
+    NODE_PATH="/usr/local/bin/node"
+    SCRIPT_PATH="$WORKING_DIR/dist/index.js"
+
+    # Проверяем путь к node
+    if ! command -v node &> /dev/null; then
+        print_error "Node.js не найден в PATH"
+        return 1
+    fi
+    NODE_PATH=$(which node)
 
     mkdir -p "$HOME/Library/LaunchAgents"
 
@@ -687,7 +694,7 @@ create_launchd_service() {
     <string>com.kanbe.app</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$EXEC_PATH</string>
+        <string>$NODE_PATH</string>
         <string>$SCRIPT_PATH</string>
     </array>
     <key>WorkingDirectory</key>
@@ -803,6 +810,7 @@ main() {
             echo "  Остановка: launchctl stop com.kanbe.app"
             echo "  Статус: launchctl list | grep kanbe"
             echo "  Логи: tail -f kanbe.log"
+            echo "  Ручной запуск: node dist/index.js"
             ;;
         *)
             echo "Команды для управления (PM2/nohup):"
