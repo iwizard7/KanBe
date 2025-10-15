@@ -18,12 +18,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
       }
-  
+
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "User already exists" });
       }
-  
+
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await storage.createUser({
         email,
@@ -31,14 +31,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName,
         lastName,
       });
-  
+
       res.status(201).json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName });
     } catch (error) {
       console.error("Error registering user:", error);
       res.status(500).json({ message: "Failed to register user" });
     }
   });
-  
+
   app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
     if (!req.user) {
       return res.status(401).json({ message: "Authentication failed" });
@@ -46,13 +46,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const user = req.user as any;
     res.json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName });
   });
-  
+
   app.post('/api/auth/logout', (req, res) => {
     req.logout(() => {
       res.json({ message: "Logged out" });
     });
   });
-  
+
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
@@ -64,6 +64,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
+  });
+
+  // Logout route (GET for browser navigation)
+  app.get('/api/logout', (req, res) => {
+    req.logout(() => {
+      res.redirect('/login');
+    });
   });
 
   // Task routes - all protected
