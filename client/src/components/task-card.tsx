@@ -15,8 +15,10 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) {
-  const visibleTags = task.tags?.slice(0, 3) || [];
-  const remainingCount = (task.tags?.length || 0) - 3;
+  // Parse tags from JSON string to array
+  const tagsArray = task.tags ? JSON.parse(task.tags) : [];
+  const visibleTags = tagsArray.slice(0, 3);
+  const remainingCount = tagsArray.length - 3;
 
   const getTagColor = (tagName: string) => {
     // Extract color from tag format "colorName:labelText" or just "labelText"
@@ -80,7 +82,7 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
       {/* Tags */}
       {task.tags && task.tags.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
-          {visibleTags.map((tag, index) => {
+          {visibleTags.map((tag: string, index: number) => {
             const { bg, label } = getTagColor(tag);
             return (
               <Badge
@@ -104,9 +106,9 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
       {/* Footer with timestamp */}
       <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
         <span data-testid={`text-task-date-${task.id}`}>
-          {formatDistanceToNow(new Date(task.createdAt), { 
-            addSuffix: true, 
-            locale: ru 
+          {formatDistanceToNow(new Date(task.createdAt * 1000), {
+            addSuffix: true,
+            locale: ru
           })}
         </span>
       </div>

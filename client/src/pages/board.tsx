@@ -46,7 +46,10 @@ export default function Board() {
   // Create task mutation
   const createTaskMutation = useMutation({
     mutationFn: async (data: { title: string; description: string; tags: string[]; status?: string }) => {
-      return await apiRequest('POST', '/api/tasks', data);
+      return await apiRequest('POST', '/api/tasks', {
+        ...data,
+        tags: JSON.stringify(data.tags),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
@@ -79,7 +82,10 @@ export default function Board() {
   const updateTaskMutation = useMutation({
     mutationFn: async (data: { id: string; title?: string; description?: string; tags?: string[] }) => {
       const { id, ...updateData } = data;
-      return await apiRequest('PATCH', `/api/tasks/${id}`, updateData);
+      return await apiRequest('PATCH', `/api/tasks/${id}`, {
+        ...updateData,
+        tags: updateData.tags ? JSON.stringify(updateData.tags) : undefined,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });

@@ -18,7 +18,7 @@ import { TAG_COLORS, type Task } from "@shared/schema";
 interface EditTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdateTask: (data: { id: string; title: string; description: string; tags: string }) => void;
+  onUpdateTask: (data: { id: string; title: string; description: string; tags: string[] }) => void;
   task: Task | null;
 }
 
@@ -54,7 +54,7 @@ export function EditTaskDialog({
       id: task.id,
       title: title.trim(),
       description: description.trim(),
-      tags: JSON.stringify(selectedTags),
+      tags: selectedTags,
     });
 
     onOpenChange(false);

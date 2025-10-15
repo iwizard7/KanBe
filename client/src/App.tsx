@@ -1,4 +1,3 @@
-// Reference: javascript_log_in_with_replit blueprint
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";

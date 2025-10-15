@@ -1,4 +1,3 @@
-// Reference: javascript_log_in_with_replit blueprint
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -41,7 +40,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
-    res.json({ id: req.user.id, email: req.user.email, firstName: req.user.firstName, lastName: req.user.lastName });
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication failed" });
+    }
+    const user = req.user as any;
+    res.json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName });
   });
   
   app.post('/api/auth/logout', (req, res) => {

@@ -133,7 +133,7 @@ export default function Login() {
 
         <div className="text-center">
           <Button
-            variant="link"
+            variant="ghost"
             onClick={() => setIsLogin(!isLogin)}
             className="text-sm"
           >

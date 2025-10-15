@@ -1,4 +1,3 @@
-// Reference: javascript_database and javascript_log_in_with_replit blueprints
 import {
   users,
   tasks,
@@ -17,6 +16,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: { email: string; password: string; firstName?: string; lastName?: string }): Promise<User>;
+  upsertUser(user: { id: string; email: string; firstName?: string; lastName?: string; profileImageUrl?: string }): Promise<User>;
 
   // Task operations
   getTasks(userId: string): Promise<Task[]>;
@@ -47,6 +47,30 @@ export class DatabaseStorage implements IStorage {
         password: userData.password,
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
+      })
+      .returning();
+    return user;
+  }
+
+  async upsertUser(userData: { id: string; email: string; firstName?: string; lastName?: string; profileImageUrl?: string }): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        profileImageUrl: userData.profileImageUrl || '',
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: userData.email,
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          profileImageUrl: userData.profileImageUrl || '',
+          updatedAt: sql`(strftime('%s', 'now'))`,
+        },
       })
       .returning();
     return user;
