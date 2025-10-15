@@ -12,27 +12,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
-import { TAG_COLORS, type Task } from "@shared/schema";
+import { Checkbox } from "@/components/ui/checkbox";
+import { X, Plus } from "lucide-react";
+import { TAG_COLORS, type Task, type Subtask } from "@shared/schema";
 
 interface EditTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdateTask: (data: { id: string; title: string; description: string; tags: string[] }) => void;
+  onUpdateTask: (data: { id: string; title: string; description: string; tags: string[]; subtasks?: Subtask[] }) => void;
   task: Task | null;
 }
 
-export function EditTaskDialog({ 
-  open, 
-  onOpenChange, 
+export function EditTaskDialog({
+  open,
+  onOpenChange,
   onUpdateTask,
-  task 
+  task
 }: EditTaskDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [selectedColor, setSelectedColor] = useState<string>(TAG_COLORS[0].name);
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [subtaskInput, setSubtaskInput] = useState("");
 
   useEffect(() => {
     if (task) {
@@ -43,6 +46,12 @@ export function EditTaskDialog({
         setSelectedTags(parsedTags || []);
       } catch {
         setSelectedTags([]);
+      }
+      try {
+        const parsedSubtasks = typeof task.subtasks === 'string' ? JSON.parse(task.subtasks) : [];
+        setSubtasks(parsedSubtasks || []);
+      } catch {
+        setSubtasks([]);
       }
     }
   }, [task]);
@@ -55,6 +64,7 @@ export function EditTaskDialog({
       title: title.trim(),
       description: description.trim(),
       tags: selectedTags,
+      subtasks,
     });
 
     onOpenChange(false);
@@ -72,6 +82,20 @@ export function EditTaskDialog({
 
   const handleRemoveTag = (tagToRemove: string) => {
     setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleAddSubtask = () => {
+    if (!subtaskInput.trim() || subtasks.length >= 10) return;
+
+    const newSubtask: Subtask = {
+      id: crypto.randomUUID(),
+      title: subtaskInput.trim(),
+      completed: false,
+      createdAt: Date.now(),
+    };
+
+    setSubtasks([...subtasks, newSubtask]);
+    setSubtaskInput("");
   };
 
   const getTagColor = (colorName: string) => {
@@ -112,6 +136,72 @@ export function EditTaskDialog({
               rows={4}
               data-testid="input-edit-task-description"
             />
+          </div>
+
+          {/* Subtasks */}
+          <div className="space-y-2">
+            <Label>Подзадачи</Label>
+
+            {/* Subtask List */}
+            {subtasks.length > 0 && (
+              <div className="space-y-1 mb-2">
+                {subtasks.map((subtask, index) => (
+                  <div key={subtask.id} className="flex items-center gap-2 p-2 bg-muted rounded">
+                    <Checkbox
+                      checked={subtask.completed}
+                      onCheckedChange={(checked) => {
+                        const updatedSubtasks = subtasks.map(s =>
+                          s.id === subtask.id ? { ...s, completed: checked as boolean } : s
+                        );
+                        setSubtasks(updatedSubtasks);
+                      }}
+                      data-testid={`checkbox-subtask-${index}`}
+                    />
+                    <span className={`text-sm flex-1 ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}>
+                      {subtask.title}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => setSubtasks(subtasks.filter(s => s.id !== subtask.id))}
+                      data-testid={`button-remove-subtask-${index}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add Subtask */}
+            <div className="flex gap-2">
+              <Input
+                placeholder="Название подзадачи"
+                value={subtaskInput}
+                onChange={(e) => setSubtaskInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddSubtask();
+                  }
+                }}
+                disabled={subtasks.length >= 10}
+                data-testid="input-edit-subtask"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleAddSubtask}
+                disabled={!subtaskInput.trim() || subtasks.length >= 10}
+                data-testid="button-edit-add-subtask"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Максимум 10 подзадач
+            </p>
           </div>
 
           {/* Tags */}

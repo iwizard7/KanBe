@@ -95,11 +95,12 @@ export default function Board() {
 
   // Update task mutation
   const updateTaskMutation = useMutation({
-    mutationFn: async (data: { id: string; title?: string; description?: string; tags?: string[] }) => {
+    mutationFn: async (data: { id: string; title?: string; description?: string; tags?: string[]; subtasks?: any[] }) => {
       const { id, ...updateData } = data;
       return await apiRequest('PATCH', `/api/tasks/${id}`, {
         ...updateData,
         tags: updateData.tags ? JSON.stringify(updateData.tags) : undefined,
+        subtasks: updateData.subtasks ? JSON.stringify(updateData.subtasks) : undefined,
       });
     },
     onSuccess: () => {
@@ -232,7 +233,7 @@ export default function Board() {
     });
   };
 
-  const updateTask = (data: { id: string; title: string; description: string; tags: string[] }) => {
+  const updateTask = (data: { id: string; title: string; description: string; tags: string[]; subtasks?: any[] }) => {
     updateTaskMutation.mutate(data);
   };
 
