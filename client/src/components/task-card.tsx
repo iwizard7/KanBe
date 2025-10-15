@@ -42,10 +42,10 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
   };
 
   return (
-    <Card 
-      className={`p-4 space-y-3 hover-elevate active-elevate-2 transition-all cursor-pointer group ${
+    <Card
+      className={`p-4 space-y-3 hover-elevate active-elevate-2 transition-all cursor-pointer group border-l-4 ${
         isDragging ? 'opacity-50 scale-105' : ''
-      }`}
+      } ${priority.bg.replace('bg-', 'border-l-')}`}
       data-testid={`card-task-${task.id}`}
     >
       {/* Header with drag handle, priority, and actions */}
@@ -91,6 +91,18 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
           {task.description}
         </p>
       )}
+
+      {/* Priority Badge */}
+      <div className="flex items-center gap-2">
+        <Badge
+          variant="outline"
+          className={`text-xs px-2 py-0.5 ${priority.bg} border-current`}
+          data-testid={`badge-priority-${task.id}`}
+        >
+          <div className={`w-1.5 h-1.5 rounded-full mr-1 ${priority.bg}`} />
+          {priority.label}
+        </Badge>
+      </div>
 
       {/* Subtasks */}
       {totalSubtasks > 0 && (
