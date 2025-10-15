@@ -1,17 +1,22 @@
 # KanBe - Кроссплатформенная Канбан доска
 
-Современная Kanban-доска с полной поддержкой macOS (Apple Silicon) и Raspberry Pi.
+Современная Kanban-доска с полной поддержкой macOS (Apple Silicon), Linux и Raspberry Pi.
 
 ## 🌟 Особенности
 
-- ✅ Полная поддержка macOS с процессорами M-серии (Apple Silicon)
-- ✅ Оптимизировано для Raspberry Pi 3/4/5 с ARM архитектурой
-- ✅ Локальная аутентификация (email + пароль)
-- ✅ SQLite база данных (низкое потребление ресурсов)
-- ✅ Drag & drop интерфейс
-- ✅ Цветные метки для задач
-- ✅ Адаптивный дизайн для всех устройств
-- ✅ Автоматическое определение платформы и архитектуры
+- ✅ **Полная поддержка macOS** с процессорами M-серии (Apple Silicon)
+- ✅ **Оптимизировано для Raspberry Pi** 3/4/5 с ARM архитектурой
+- ✅ **Тёмная тема** с автоматическим переключением
+- ✅ **Расширенные возможности задач**: приоритеты, дедлайны, подзадачи
+- ✅ **Системные сервисы**: systemd (Linux) и launchd (macOS)
+- ✅ **Локальная аутентификация** (email + пароль)
+- ✅ **SQLite база данных** (низкое потребление ресурсов)
+- ✅ **Drag & drop интерфейс** с поддержкой межколонкового перемещения
+- ✅ **Цветные метки и приоритеты** для задач
+- ✅ **Календарь дедлайнов** с визуальной индикацией
+- ✅ **Подзадачи** для декомпозиции сложных задач
+- ✅ **Адаптивный дизайн** для всех устройств
+- ✅ **Автоматическое определение платформы** и архитектуры
 
 ## 🚀 Быстрая установка
 
@@ -56,8 +61,8 @@ curl -fsSL https://raw.githubusercontent.com/iwizard7/KanBe/main/install.sh | ba
    - Создаст конфигурацию
    - Создаст первого пользователя
 
-3. **Готово!** Приложение будет доступно на `http://localhost`
-  - API: `http://localhost:5000`
+3. **Готово!** Приложение будет доступно на `http://localhost:5010`
+  - API: `http://localhost:5010`
   - Фронтенд (разработка): `http://localhost:3000`
 
 ## Ручная установка
@@ -101,7 +106,7 @@ npm run start
 
 ### API
 
-Базовый URL: `http://localhost:5000/api`
+Базовый URL: `http://localhost:5010/api`
 
 Все запросы требуют аутентификации через сессии.
 
@@ -112,26 +117,47 @@ npm run start
 
 #### Задачи
 - `GET /api/tasks` - Получить все задачи пользователя
-- `POST /api/tasks` - Создать задачу
+- `POST /api/tasks` - Создать задачу (с поддержкой приоритетов, дедлайнов, подзадач)
 - `PATCH /api/tasks/:id` - Обновить задачу
 - `DELETE /api/tasks/:id` - Удалить задачу
 - `PATCH /api/tasks/:id/position` - Переместить задачу
 
 ## Управление
 
-### PM2 команды
+### Системные сервисы (рекомендуется)
+
+#### Linux / Raspberry Pi (systemd)
+```bash
+sudo systemctl start kanbe      # Запуск
+sudo systemctl stop kanbe       # Остановка
+sudo systemctl restart kanbe    # Перезапуск
+sudo systemctl status kanbe     # Статус
+sudo journalctl -u kanbe -f     # Логи
+sudo systemctl enable kanbe     # Автозапуск при загрузке
+```
+
+#### macOS (launchd)
+```bash
+launchctl start com.kanbe.app     # Запуск
+launchctl stop com.kanbe.app      # Остановка
+launchctl list | grep kanbe       # Статус
+tail -f kanbe.log                 # Логи
+```
+
+### Универсальные команды (работают на всех платформах)
+```bash
+npm run status    # Статус сервиса
+npm run logs      # Просмотр логов
+npm run restart   # Перезапуск
+npm run stop      # Остановка
+```
+
+### PM2 команды (альтернативный способ)
 ```bash
 pm2 list                    # Список процессов
 pm2 logs kanbe             # Логи приложения
 pm2 restart kanbe          # Перезапуск
 pm2 stop kanbe             # Остановка
-```
-
-### Systemd (если настроено)
-```bash
-sudo systemctl status kanbe
-sudo systemctl restart kanbe
-sudo systemctl stop kanbe
 ```
 
 ## Разработка
@@ -176,13 +202,23 @@ npm run start
 ```
 kanbe/
 ├── client/                 # React фронтенд (порт 3000 в разработке)
-├── server/                 # Express бэкенд (порт 5000)
+│   ├── src/
+│   │   ├── components/     # UI компоненты (диалоги, карточки, навбар)
+│   │   ├── pages/         # Страницы приложения
+│   │   ├── hooks/         # React хуки
+│   │   └── lib/           # Утилиты и конфигурация
+├── server/                 # Express бэкенд (порт 5010)
+│   ├── index.ts           # Главный серверный файл
+│   ├── routes.ts          # API маршруты
+│   ├── auth.ts            # Аутентификация
+│   └── db.ts              # Конфигурация базы данных
 ├── shared/                 # Общие типы и схема БД
+│   └── schema.ts          # Drizzle схема, типы, константы
 ├── data/                   # База данных SQLite
 ├── dist/                   # Собранное приложение
-├── install.sh             # Скрипт автоматической установки
+├── install.sh             # Универсальный установщик
 ├── README.md              # Документация
-└── package.json
+└── package.json           # Зависимости и скрипты
 ```
 
 ## Безопасность
