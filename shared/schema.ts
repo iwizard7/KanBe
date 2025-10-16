@@ -114,6 +114,40 @@ export const PRIORITY_LEVELS = [
 export type TagColor = typeof TAG_COLORS[number]['name'];
 export type PriorityLevel = typeof PRIORITY_LEVELS[number]['name'];
 
+// Tags table for storing global tags
+export const tags = sqliteTable("tags", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
+  name: text("name").notNull(),
+  color: text("color").notNull(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: real("created_at").default(sql`(strftime('%s', 'now'))`).notNull(),
+  updatedAt: real("updated_at").default(sql`(strftime('%s', 'now'))`).notNull(),
+});
+
+// Tags relations
+export const tagsRelations = relations(tags, ({ one }) => ({
+  user: one(users, {
+    fields: [tags.userId],
+    references: [users.id],
+  }),
+}));
+
+// Zod schemas for tags
+export const insertTagSchema = createInsertSchema(tags).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateTagSchema = insertTagSchema.partial().extend({
+  id: z.string(),
+});
+
+// Types
+export type Tag = typeof tags.$inferSelect;
+export type InsertTag = z.infer<typeof insertTagSchema>;
+export type UpdateTag = z.infer<typeof updateTagSchema>;
+
 // Subtask type
 export interface Subtask {
   id: string;
