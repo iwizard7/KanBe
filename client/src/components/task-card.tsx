@@ -9,12 +9,13 @@ import { ru } from "date-fns/locale";
 
 interface TaskCardProps {
   task: Task;
+  allTasks?: Task[];
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
   isDragging?: boolean;
 }
 
-export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) {
+export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: TaskCardProps) {
   // Parse tags from JSON string to array
   const tagsArray = task.tags ? JSON.parse(task.tags) : [];
   const visibleTags = tagsArray.slice(0, 3);
@@ -172,9 +173,34 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
 
       {/* Dependencies */}
       {totalDependencies > 0 && (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Link className="w-3 h-3" />
-          <span>Зависит от {totalDependencies} задач</span>
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Link className="w-3 h-3" />
+            <span>Зависит от {totalDependencies} задач</span>
+          </div>
+          <div className="space-y-1 ml-4">
+            {dependencies.slice(0, 3).map((depId: string, index: number) => {
+              const depTask = allTasks?.find(t => t.id === depId);
+              return (
+                <div key={depId} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className={`w-2 h-2 rounded-full ${
+                    depTask?.priority === 'urgent' ? 'bg-red-500' :
+                    depTask?.priority === 'high' ? 'bg-orange-500' :
+                    depTask?.priority === 'medium' ? 'bg-yellow-500' :
+                    'bg-green-500'
+                  }`} />
+                  <span className="truncate">
+                    {depTask?.title || 'Задача не найдена'}
+                  </span>
+                </div>
+              );
+            })}
+            {totalDependencies > 3 && (
+              <div className="text-xs text-muted-foreground">
+                +{totalDependencies - 3} ещё...
+              </div>
+            )}
+          </div>
         </div>
       )}
 

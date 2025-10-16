@@ -10,6 +10,7 @@ interface KanbanColumnProps {
   title: string;
   status: string;
   tasks: Task[];
+  allTasks?: Task[];
   accentColor: string;
   onCreateTask: (status: string) => void;
   onEditTask: (task: Task) => void;
@@ -21,6 +22,7 @@ export function KanbanColumn({
   title,
   status,
   tasks,
+  allTasks = [],
   accentColor,
   onCreateTask,
   onEditTask,
@@ -133,6 +135,7 @@ export function KanbanColumn({
             >
               <TaskCard
                 task={task}
+                allTasks={allTasks}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
               />

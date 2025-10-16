@@ -281,6 +281,7 @@ export default function Board() {
               title={column.title}
               status={column.status}
               tasks={tasksByStatus[column.status] || []}
+              allTasks={tasks}
               accentColor={column.accentColor}
               onCreateTask={handleCreateTask}
               onEditTask={handleEditTask}
