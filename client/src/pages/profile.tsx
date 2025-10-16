@@ -83,10 +83,7 @@ export default function Profile() {
 
   const handleAvatarUpload = () => {
     // TODO: Implement avatar upload
-    toast({
-      title: "Загрузка аватара",
-      description: "Функция будет реализована в следующей версии",
-    });
+    console.log("Загрузка аватара будет реализована в следующей версии");
   };
 
   const getStatusInfo = (status: UserStatus) => {

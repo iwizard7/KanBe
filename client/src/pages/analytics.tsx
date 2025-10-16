@@ -139,12 +139,12 @@ export default function Analytics() {
 
   const handleExportPDF = () => {
     // TODO: Implement PDF export
-    alert('Экспорт в PDF будет реализован в следующей версии');
+    console.log('Экспорт в PDF будет реализован в следующей версии');
   };
 
   const handleExportExcel = () => {
     // TODO: Implement Excel export
-    alert('Экспорт в Excel будет реализован в следующей версии');
+    console.log('Экспорт в Excel будет реализован в следующей версии');
   };
 
   if (isLoading) {
