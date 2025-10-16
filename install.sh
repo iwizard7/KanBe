@@ -616,6 +616,20 @@ async function createAdmin() {
             process.exit(1);
         }
 
+        // Проверяем, существует ли уже пользователь с таким email
+        const existingUser = await db
+            .select()
+            .from(users)
+            .where(sql`${users.email} = ${email}`)
+            .limit(1);
+
+        if (existingUser.length > 0) {
+            console.log('ℹ️  Пользователь с таким email уже существует, пропускаем создание');
+            console.log('📧 Email:', email);
+            console.log('🆔 ID пользователя:', existingUser[0].id);
+            return;
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const [user] = await db
