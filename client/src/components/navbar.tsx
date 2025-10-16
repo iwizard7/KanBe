@@ -8,13 +8,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { LogOut, User as UserIcon, Moon, Sun, Monitor, BarChart3, Kanban } from "lucide-react";
+import { LogOut, User as UserIcon, Moon, Sun, Monitor, BarChart3, Kanban, User } from "lucide-react";
 import { useLocation } from "wouter";
-import type { User } from "@shared/schema";
+import type { User as UserType } from "@shared/schema";
 import logo from "@/assets/logo.png";
 
 interface NavbarProps {
-  user?: User;
+  user?: UserType;
 }
 
 export function Navbar({ user }: NavbarProps) {
@@ -136,6 +136,13 @@ export function Navbar({ user }: NavbarProps) {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => navigate('/profile')}
+                  data-testid="button-profile"
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Профиль
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => window.location.href = '/api/logout'}
                   data-testid="button-logout"

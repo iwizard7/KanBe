@@ -30,6 +30,11 @@ export const users = sqliteTable("users", {
   lastName: text("last_name"),
   profileImageUrl: text("profile_image_url"),
   password: text("password"), // for local auth
+  timezone: text("timezone").default('UTC'), // user timezone
+  status: text("status").default('active'), // 'active', 'away', 'busy', 'offline'
+  bio: text("bio"), // user bio/description
+  notificationsEnabled: integer("notifications_enabled").default(1), // 1 = enabled, 0 = disabled
+  emailNotifications: integer("email_notifications").default(1), // email notifications enabled
   createdAt: real("created_at").default(sql`(strftime('%s', 'now'))`),
   updatedAt: real("updated_at").default(sql`(strftime('%s', 'now'))`),
 });
@@ -46,6 +51,9 @@ export const tasks = sqliteTable("tasks", {
   priority: text("priority").default('medium'), // 'low', 'medium', 'high', 'urgent'
   dueDate: real("due_date"), // Unix timestamp for deadline
   subtasks: text("subtasks").default('[]'), // JSON array of subtasks
+  timeEstimate: integer("time_estimate"), // estimated time in minutes
+  timeSpent: integer("time_spent").default(0), // actual time spent in minutes
+  dependencies: text("dependencies").default('[]'), // JSON array of task IDs this task depends on
   lastMovedAt: real("last_moved_at"), // Unix timestamp of last status change
   createdAt: real("created_at").default(sql`(strftime('%s', 'now'))`).notNull(),
   updatedAt: real("updated_at").default(sql`(strftime('%s', 'now'))`).notNull(),
@@ -111,5 +119,27 @@ export interface Subtask {
   id: string;
   title: string;
   completed: boolean;
+  createdAt: number;
+}
+
+// User status options
+export const USER_STATUSES = [
+  { name: 'active', label: 'Активен', color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900' },
+  { name: 'away', label: 'Отошел', color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-900' },
+  { name: 'busy', label: 'Занят', color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900' },
+  { name: 'offline', label: 'Не в сети', color: 'text-gray-600', bg: 'bg-gray-100 dark:bg-gray-900' },
+] as const;
+
+export type UserStatus = typeof USER_STATUSES[number]['name'];
+
+// Time tracking entry type
+export interface TimeEntry {
+  id: string;
+  taskId: string;
+  userId: string;
+  startTime: number;
+  endTime?: number;
+  duration: number; // in minutes
+  description?: string;
   createdAt: number;
 }
