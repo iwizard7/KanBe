@@ -592,7 +592,7 @@ async function createAdmin() {
         }
 
         // Проверяем, существует ли уже пользователь с таким email
-        const existingUsers = db
+        const existingUsers = await db
             .select()
             .from(users)
             .where(eq(users.email, email))
@@ -607,7 +607,7 @@ async function createAdmin() {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const [user] = db
+        const [user] = await db
             .insert(users)
             .values({
                 email,
