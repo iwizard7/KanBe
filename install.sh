@@ -221,12 +221,40 @@ setup_database() {
     # Создание директории для базы данных
     mkdir -p data
 
-    # Применение миграций
+    # Проверка наличия drizzle-kit
+    if [ ! -f "node_modules/.bin/drizzle-kit" ]; then
+        print_error "drizzle-kit не найден. Убедитесь, что зависимости установлены корректно."
+        return 1
+    fi
+
+    # Применение миграций с повторными попытками
     if command -v npm &> /dev/null; then
-        npm run db:push
-        print_success "База данных настроена"
+        print_info "Применение миграций базы данных..."
+        local max_attempts=3
+        local attempt=1
+
+        while [ $attempt -le $max_attempts ]; do
+            print_info "Попытка $attempt из $max_attempts..."
+
+            if npm run db:push 2>&1; then
+                print_success "База данных настроена успешно"
+                return 0
+            else
+                print_warning "Попытка $attempt не удалась"
+                if [ $attempt -lt $max_attempts ]; then
+                    print_info "Повторная попытка через 3 секунды..."
+                    sleep 3
+                fi
+            fi
+            ((attempt++))
+        done
+
+        print_error "Не удалось настроить базу данных после $max_attempts попыток"
+        print_info "Попробуйте выполнить 'npm run db:push' вручную"
+        return 1
     else
         print_warning "NPM не найден, пропуск настройки базы данных"
+        return 1
     fi
 }
 
@@ -797,6 +825,22 @@ main() {
 
     # Создание первого пользователя (если single user режим)
     create_first_user
+
+    # Проверка успешности настройки базы данных перед сборкой
+    if [ ! -f "data/kanbe.db" ]; then
+        print_error "База данных не создана. Установка не может быть завершена."
+        exit 1
+    fi
+
+    # Проверка наличия таблиц в базе данных
+    if command -v sqlite3 &> /dev/null; then
+        TABLES_COUNT=$(sqlite3 data/kanbe.db "SELECT COUNT(*) FROM sqlite_master WHERE type='table';" 2>/dev/null || echo "0")
+        if [ "$TABLES_COUNT" -eq 0 ]; then
+            print_error "Таблицы базы данных не созданы. Установка не может быть завершена."
+            print_info "Попробуйте выполнить 'npm run db:push' вручную"
+            exit 1
+        fi
+    fi
 
     # Сборка приложения
     build_application
