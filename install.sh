@@ -362,11 +362,21 @@ download_code() {
         # Проверяем remote URL
         if git remote get-url origin 2>/dev/null | grep -q "iwizard7/KanBe"; then
             print_info "Обновление существующего репозитория..."
-            git pull origin main || git pull origin master
-            if [ $? -eq 0 ]; then
-                print_success "Репозиторий обновлен"
+
+            # Сохраняем базу данных перед обновлением
+            if [ -f "kanbe.db" ]; then
+                print_info "Сохранение базы данных перед обновлением..."
+                cp kanbe.db kanbe.db.backup.$(date +%Y%m%d_%H%M%S)
+            fi
+
+            # Пытаемся обновить с разных веток
+            if git pull origin main 2>/dev/null; then
+                print_success "Репозиторий обновлен с ветки main"
+            elif git pull origin master 2>/dev/null; then
+                print_success "Репозиторий обновлен с ветки master"
             else
                 print_warning "Не удалось обновить репозиторий, продолжаем с текущей версией"
+                print_info "Возможно есть локальные изменения. Используйте 'git stash' для их сохранения."
             fi
         else
             print_info "Репозиторий найден, но remote URL отличается"
