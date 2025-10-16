@@ -218,7 +218,7 @@ export function EditTaskDialog({
                   variant={priority === level.name ? "default" : "outline"}
                   size="sm"
                   onClick={() => setPriority(level.name)}
-                  className={`flex items-center gap-1 ${priority === level.name ? level.bg : ''}`}
+                  className={`flex items-center gap-1 ${priority === level.name ? `${level.bg} ${level.color}` : ''}`}
                   data-testid={`button-edit-priority-${level.name}`}
                 >
                   <div className={`w-2 h-2 rounded-full ${level.bg}`} />
