@@ -773,8 +773,12 @@ EOF
     # Загрузка сервиса
     launchctl load "$PLIST_FILE"
 
+    # Явный запуск сервиса после загрузки
+    sleep 2
+    launchctl start com.kanbe.app
+
     print_success "Launchd service создан: $PLIST_FILE"
-    print_info "Сервис загружен и будет запускаться автоматически"
+    print_info "Сервис загружен и запущен"
 }
 
 # Основная функция установки
@@ -922,6 +926,8 @@ main() {
             fi
             ;;
         "macos")
+            # Проверяем статус сервиса после запуска
+            sleep 3
             if launchctl list | grep -q kanbe; then
                 print_success "KanBe запущен как launchd сервис"
                 echo -e "${CYAN}🌐 Откройте браузер: http://localhost:3000${NC}"
