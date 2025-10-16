@@ -282,8 +282,8 @@ select_installation_type() {
             print_info "Регистрация в UI будет включена"
             ;;
         *)
-            print_warning "Неверный выбор, используется установка для нескольких пользователей"
-            SINGLE_USER=false
+            print_warning "Неверный выбор, используется установка для одного пользователя"
+            SINGLE_USER=true
             ;;
     esac
 }
