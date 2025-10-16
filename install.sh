@@ -171,7 +171,6 @@ install_dependencies() {
             print_info "Установка зависимостей для macOS..."
             if [ "$CPU_ARCH" = "arm64" ]; then
                 print_info "Оптимизация для Apple Silicon (ARM64)..."
-                npm config set python python3
                 npm install --no-audit --no-fund --timeout=60000
             else
                 npm install --no-audit --no-fund --timeout=60000
@@ -258,19 +257,9 @@ setup_database() {
     fi
 }
 
-# Запрос типа установки (только один пользователь)
+# Настройка типа установки (только один пользователь)
 select_installation_type() {
-    print_step "Настройка типа установки..."
-
-    echo ""
-    echo "=== Тип установки ==="
-    echo "KanBe будет установлен для одного пользователя"
-    echo "Регистрация новых пользователей отключена"
-    echo ""
-
     SINGLE_USER=true
-    print_info "Установка для одного пользователя"
-    print_info "Регистрация в UI отключена"
 }
 
 # Проверка доступности порта
@@ -573,7 +562,7 @@ create_first_user() {
     # Создание временного скрипта для создания пользователя
     cat > create_admin.js << 'EOF'
 import Database from 'better-sqlite3';
-import { drizzle, sql } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { users } from './shared/schema.ts';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
@@ -603,7 +592,7 @@ async function createAdmin() {
         }
 
         // Проверяем, существует ли уже пользователь с таким email
-        const existingUser = await db
+        const existingUser = db
             .select()
             .from(users)
             .where(eq(users.email, email))
@@ -618,7 +607,7 @@ async function createAdmin() {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const [user] = await db
+        const [user] = db
             .insert(users)
             .values({
                 email,
