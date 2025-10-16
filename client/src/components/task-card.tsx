@@ -178,29 +178,26 @@ export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: 
             <Link className="w-3 h-3" />
             <span>Зависит от {totalDependencies} задач</span>
           </div>
-          <div className="space-y-1 ml-4">
-            {dependencies.slice(0, 3).map((depId: string, index: number) => {
-              const depTask = allTasks?.find(t => t.id === depId);
-              return (
-                <div key={depId} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <div className={`w-2 h-2 rounded-full ${
-                    depTask?.priority === 'urgent' ? 'bg-red-500' :
-                    depTask?.priority === 'high' ? 'bg-orange-500' :
-                    depTask?.priority === 'medium' ? 'bg-yellow-500' :
-                    'bg-green-500'
-                  }`} />
-                  <span className="truncate">
-                    {depTask?.title || 'Задача не найдена'}
-                  </span>
-                </div>
-              );
-            })}
-            {totalDependencies > 3 && (
-              <div className="text-xs text-muted-foreground">
-                +{totalDependencies - 3} ещё...
-              </div>
-            )}
-          </div>
+          {totalDependencies <= 3 && (
+            <div className="space-y-1 ml-4">
+              {dependencies.map((depId: string, index: number) => {
+                const depTask = allTasks?.find(t => t.id === depId);
+                return (
+                  <div key={depId} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className={`w-2 h-2 rounded-full ${
+                      depTask?.priority === 'urgent' ? 'bg-red-500' :
+                      depTask?.priority === 'high' ? 'bg-orange-500' :
+                      depTask?.priority === 'medium' ? 'bg-yellow-500' :
+                      'bg-green-500'
+                    }`} />
+                    <span className="truncate">
+                      {depTask?.title || 'Задача не найдена'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
