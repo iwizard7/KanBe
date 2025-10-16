@@ -37,6 +37,8 @@ interface CreateTaskDialogProps {
     dueDate?: Date;
     subtasks?: string[];
     status?: string;
+    timeEstimate?: number;
+    dependencies?: string[];
   }) => void;
   defaultStatus?: string;
 }
@@ -56,6 +58,8 @@ export function CreateTaskDialog({
   const [dueDate, setDueDate] = useState<Date>();
   const [subtasks, setSubtasks] = useState<string[]>([]);
   const [subtaskInput, setSubtaskInput] = useState("");
+  const [timeEstimate, setTimeEstimate] = useState<number>(0);
+  const [dependencies, setDependencies] = useState<string[]>([]);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -68,6 +72,8 @@ export function CreateTaskDialog({
       dueDate,
       subtasks,
       status: defaultStatus,
+      timeEstimate,
+      dependencies,
     });
 
     // Reset form
@@ -170,6 +176,20 @@ export function CreateTaskDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Time Estimate */}
+          <div className="space-y-2">
+            <Label htmlFor="timeEstimate">Оценка времени (минуты)</Label>
+            <Input
+              id="timeEstimate"
+              type="number"
+              placeholder="0"
+              value={timeEstimate || ''}
+              onChange={(e) => setTimeEstimate(parseInt(e.target.value) || 0)}
+              min="0"
+              data-testid="input-time-estimate"
+            />
           </div>
 
           {/* Due Date */}

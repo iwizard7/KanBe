@@ -53,6 +53,8 @@ export default function Board() {
       dueDate?: Date;
       subtasks?: string[];
       status?: string;
+      timeEstimate?: number;
+      dependencies?: string[];
     }) => {
       return await apiRequest('POST', '/api/tasks', {
         ...data,
@@ -64,6 +66,7 @@ export default function Board() {
           createdAt: Date.now()
         }))) : undefined,
         dueDate: data.dueDate ? Math.floor(data.dueDate.getTime() / 1000) : undefined,
+        dependencies: data.dependencies ? JSON.stringify(data.dependencies) : undefined,
       });
     },
     onSuccess: () => {
@@ -226,7 +229,17 @@ export default function Board() {
     moveTaskMutation.mutate({ taskId, status: newStatus, position: newPosition });
   };
 
-  const createTask = (data: { title: string; description: string; tags: string[]; status?: string }) => {
+  const createTask = (data: {
+    title: string;
+    description: string;
+    tags: string[];
+    priority?: PriorityLevel;
+    dueDate?: Date;
+    subtasks?: string[];
+    status?: string;
+    timeEstimate?: number;
+    dependencies?: string[];
+  }) => {
     createTaskMutation.mutate({
       ...data,
       status: data.status || defaultStatus,

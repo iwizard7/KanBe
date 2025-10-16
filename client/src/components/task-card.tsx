@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, GripVertical, CheckSquare, Clock, AlertTriangle } from "lucide-react";
+import { Pencil, Trash2, GripVertical, CheckSquare, Clock, AlertTriangle, Timer } from "lucide-react";
 import type { Task, Subtask } from "@shared/schema";
 import { TAG_COLORS, PRIORITY_LEVELS } from "@shared/schema";
 import { formatDistanceToNow, isAfter, isBefore, addDays } from "date-fns";
@@ -163,6 +163,14 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
               +{remainingCount}
             </Badge>
           )}
+        </div>
+      )}
+
+      {/* Time Estimate */}
+      {task.timeEstimate && task.timeEstimate > 0 && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Timer className="w-3 h-3" />
+          <span>Оценка: {task.timeEstimate} мин</span>
         </div>
       )}
 
