@@ -19,6 +19,9 @@ export default defineConfig({
         ]
       : []),
   ],
+  define: {
+    'import.meta.env.VITE_SINGLE_USER': JSON.stringify(process.env.SINGLE_USER || 'false'),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

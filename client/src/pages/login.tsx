@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,18 @@ export default function Login() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSingleUser, setIsSingleUser] = useState(false);
   const { toast } = useToast();
   const [, navigate] = useLocation();
+
+  useEffect(() => {
+    // Проверяем настройку SINGLE_USER из переменных окружения
+    const singleUser = import.meta.env.VITE_SINGLE_USER === 'true';
+    setIsSingleUser(singleUser);
+    if (singleUser) {
+      setIsLogin(true); // Для single user режима всегда показываем форму входа
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,18 +141,20 @@ export default function Login() {
           </Button>
         </form>
 
-        <div className="text-center">
-          <Button
-            variant="ghost"
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-sm"
-          >
-            {isLogin
-              ? "Нет аккаунта? Зарегистрироваться"
-              : "Уже есть аккаунт? Войти"
-            }
-          </Button>
-        </div>
+        {!isSingleUser && (
+          <div className="text-center">
+            <Button
+              variant="ghost"
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-sm"
+            >
+              {isLogin
+                ? "Нет аккаунта? Зарегистрироваться"
+                : "Уже есть аккаунт? Войти"
+              }
+            </Button>
+          </div>
+        )}
       </Card>
     </div>
   );
