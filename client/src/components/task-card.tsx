@@ -25,6 +25,10 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
   const completedSubtasks = subtasks.filter(subtask => subtask.completed).length;
   const totalSubtasks = subtasks.length;
 
+  // Parse dependencies from JSON string to array
+  const dependencies = task.dependencies ? JSON.parse(task.dependencies) : [];
+  const totalDependencies = dependencies.length;
+
   // Priority and deadline logic
   const priority = PRIORITY_LEVELS.find(p => p.name === task.priority) || PRIORITY_LEVELS[1]; // default to medium
   const dueDate = task.dueDate ? new Date(task.dueDate * 1000) : null;
@@ -167,10 +171,10 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
       )}
 
       {/* Dependencies */}
-      {task.dependencies && task.dependencies.length > 0 && (
+      {totalDependencies > 0 && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Link className="w-3 h-3" />
-          <span>Зависит от {task.dependencies.length} задач</span>
+          <span>Зависит от {totalDependencies} задач</span>
         </div>
       )}
 
