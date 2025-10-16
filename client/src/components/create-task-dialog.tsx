@@ -353,54 +353,24 @@ export function CreateTaskDialog({
           <div className="space-y-2">
             <Label>Метки</Label>
 
-            {/* Selected Tags */}
-            {selectedTags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {selectedTags.map((tag, index) => {
-                  const [colorName, label] = tag.split(':');
-                  const color = getTagColor(colorName);
-                  return (
-                    <Badge
-                      key={index}
-                      variant="secondary"
-                      className={`${color.bg} bg-opacity-20 pr-1`}
-                      data-testid={`badge-selected-tag-${index}`}
-                    >
-                      {label}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-4 w-4 ml-1 hover:bg-transparent"
-                        onClick={() => handleRemoveTag(tag)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </Badge>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Color Picker */}
-            <div className="flex gap-2 mb-2">
-              {TAG_COLORS.map((color) => (
-                <button
-                  key={color.name}
-                  type="button"
-                  className={`w-8 h-8 rounded-full ${color.bg} border-2 transition-all ${
-                    selectedColor === color.name
-                      ? 'border-foreground scale-110'
-                      : 'border-transparent hover:scale-105'
-                  }`}
-                  onClick={() => setSelectedColor(color.name)}
-                  title={color.label}
-                  data-testid={`button-color-${color.name}`}
-                />
-              ))}
-            </div>
-
-            {/* Tag Input */}
+            {/* Compact Tag Input */}
             <div className="flex gap-2">
+              <div className="flex gap-1">
+                {TAG_COLORS.slice(0, 6).map((color) => (
+                  <button
+                    key={color.name}
+                    type="button"
+                    className={`w-6 h-6 rounded-full ${color.bg} border transition-all ${
+                      selectedColor === color.name
+                        ? 'border-foreground scale-110'
+                        : 'border-transparent hover:scale-105'
+                    }`}
+                    onClick={() => setSelectedColor(color.name)}
+                    title={color.label}
+                    data-testid={`button-color-${color.name}`}
+                  />
+                ))}
+              </div>
               <Input
                 placeholder="Название метки"
                 value={tagInput}
@@ -412,6 +382,7 @@ export function CreateTaskDialog({
                   }
                 }}
                 disabled={selectedTags.length >= 10}
+                className="flex-1"
                 data-testid="input-tag-name"
               />
               <Button
@@ -421,9 +392,38 @@ export function CreateTaskDialog({
                 disabled={!tagInput.trim() || selectedTags.length >= 10}
                 data-testid="button-add-tag"
               >
-                Добавить
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
+
+            {/* Selected Tags */}
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {selectedTags.map((tag, index) => {
+                  const [colorName, label] = tag.split(':');
+                  const color = getTagColor(colorName);
+                  return (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className={`${color.bg} bg-opacity-20 text-xs px-2 py-0.5`}
+                      data-testid={`badge-selected-tag-${index}`}
+                    >
+                      {label}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-3 w-3 ml-1 hover:bg-transparent p-0"
+                        onClick={() => handleRemoveTag(tag)}
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </Button>
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground">
               Максимум 10 меток на задачу
             </p>
