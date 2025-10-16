@@ -588,8 +588,8 @@ create_first_user() {
     # Создание временного скрипта для создания пользователя
     cat > create_admin.js << 'EOF'
 import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { users } from './shared/schema.js';
+import { drizzle, sql } from 'drizzle-orm';
+import { users } from './shared/schema.ts';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 
