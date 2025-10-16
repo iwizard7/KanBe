@@ -590,6 +590,7 @@ create_first_user() {
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { users } from './shared/schema.js';
+import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 
 console.log('Создание администратора...');
@@ -620,7 +621,7 @@ async function createAdmin() {
         const existingUser = await db
             .select()
             .from(users)
-            .where(sql`${users.email} = ${email}`)
+            .where(eq(users.email, email))
             .limit(1);
 
         if (existingUser.length > 0) {
