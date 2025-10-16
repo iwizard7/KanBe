@@ -132,7 +132,7 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]" data-testid="dialog-create-task">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" data-testid="dialog-create-task">
         <DialogHeader>
           <DialogTitle>Создать задачу</DialogTitle>
           <DialogDescription>
