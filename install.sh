@@ -854,6 +854,8 @@ main() {
             print_info "Попробуйте выполнить 'npm run db:push' вручную"
             exit 1
         fi
+    else
+        print_warning "sqlite3 не найден, пропуск проверки таблиц"
     fi
 
     # Сборка приложения
