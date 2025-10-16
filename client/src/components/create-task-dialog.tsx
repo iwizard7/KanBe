@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -21,10 +22,11 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, X, Plus } from "lucide-react";
+import { CalendarIcon, X, Plus, Link } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { TAG_COLORS, PRIORITY_LEVELS, type PriorityLevel } from "@shared/schema";
+import { TAG_COLORS, PRIORITY_LEVELS, type PriorityLevel, type Task } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -60,6 +62,12 @@ export function CreateTaskDialog({
   const [subtaskInput, setSubtaskInput] = useState("");
   const [timeEstimate, setTimeEstimate] = useState<number>(0);
   const [dependencies, setDependencies] = useState<string[]>([]);
+
+  // Fetch existing tasks for dependencies
+  const { data: existingTasks = [] } = useQuery<Task[]>({
+    queryKey: ['/api/tasks'],
+    enabled: open, // Only fetch when dialog is open
+  });
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -272,6 +280,72 @@ export function CreateTaskDialog({
             </div>
             <p className="text-xs text-muted-foreground">
               Максимум 10 подзадач
+            </p>
+          </div>
+
+          {/* Dependencies */}
+          <div className="space-y-2">
+            <Label>Зависимости</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Выберите задачи, которые должны быть выполнены перед этой
+            </p>
+
+            {/* Selected Dependencies */}
+            {dependencies.length > 0 && (
+              <div className="space-y-1 mb-2">
+                {dependencies.map((depId, index) => {
+                  const depTask = existingTasks.find(t => t.id === depId);
+                  return (
+                    <div key={depId} className="flex items-center gap-2 p-2 bg-muted rounded">
+                      <Link className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm flex-1 truncate">
+                        {depTask?.title || 'Задача не найдена'}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => setDependencies(dependencies.filter(id => id !== depId))}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Dependencies Selector */}
+            <Select
+              onValueChange={(value) => {
+                if (!dependencies.includes(value) && dependencies.length < 5) {
+                  setDependencies([...dependencies, value]);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Добавить зависимость" />
+              </SelectTrigger>
+              <SelectContent>
+                {existingTasks
+                  .filter(task => !dependencies.includes(task.id))
+                  .map((task) => (
+                    <SelectItem key={task.id} value={task.id}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${
+                          task.priority === 'urgent' ? 'bg-red-500' :
+                          task.priority === 'high' ? 'bg-orange-500' :
+                          task.priority === 'medium' ? 'bg-yellow-500' :
+                          'bg-green-500'
+                        }`} />
+                        <span className="truncate">{task.title}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Максимум 5 зависимостей
             </p>
           </div>
 
