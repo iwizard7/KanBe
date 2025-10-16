@@ -212,6 +212,14 @@ export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: 
         </div>
       )}
 
+      {/* Time Spent */}
+      {task.timeSpent && task.timeSpent > 0 && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Timer className="w-3 h-3" />
+          <span>Затрачено: {task.timeSpent} мин</span>
+        </div>
+      )}
+
       {/* Footer with deadline and timestamp */}
       <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
         <div className="flex items-center gap-2">

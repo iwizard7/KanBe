@@ -377,33 +377,29 @@ export function CreateTaskDialog({
                   />
                 ))}
               </div>
-              <div className="flex-1 relative">
-                <Input
-                  placeholder="Название метки"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddTag();
-                    }
-                  }}
-                  disabled={selectedTags.length >= 10}
-                  className="pr-8"
-                  data-testid="input-tag-name"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                  onClick={handleAddTag}
-                  disabled={!tagInput.trim() || selectedTags.length >= 10}
-                  data-testid="button-add-tag"
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
+              <Input
+                placeholder="Название метки"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+                disabled={selectedTags.length >= 10}
+                className="flex-1"
+                data-testid="input-tag-name"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleAddTag}
+                disabled={!tagInput.trim() || selectedTags.length >= 10}
+                data-testid="button-add-tag"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
 
             {/* Selected Tags */}
