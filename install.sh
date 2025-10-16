@@ -547,7 +547,7 @@ select_installation_directory() {
 create_first_user() {
     # Пропускаем создание пользователя если не single user режим
     if [ "$SINGLE_USER" != "true" ]; then
-        print_info "Пропуск создания пользователя (режим нескольких пользователей)"
+        print_info "Пропуск создания пользователя (single user режим)"
         return 0
     fi
 
