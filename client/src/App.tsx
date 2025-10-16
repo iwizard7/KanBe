@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Board from "@/pages/board";
+import Analytics from "@/pages/analytics";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
       {isAuthenticated && <Route path="/board" component={Board} />}
+      {isAuthenticated && <Route path="/analytics" component={Analytics} />}
       <Route component={NotFound} />
     </Switch>
   );

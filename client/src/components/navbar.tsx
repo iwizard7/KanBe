@@ -8,7 +8,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { LogOut, User as UserIcon, Moon, Sun, Monitor } from "lucide-react";
+import { LogOut, User as UserIcon, Moon, Sun, Monitor, BarChart3, Kanban } from "lucide-react";
+import { useLocation } from "wouter";
 import type { User } from "@shared/schema";
 import logo from "@/assets/logo.png";
 
@@ -18,6 +19,7 @@ interface NavbarProps {
 
 export function Navbar({ user }: NavbarProps) {
   const { theme, setTheme } = useTheme();
+  const [, navigate] = useLocation();
   const userInitials = user?.firstName && user?.lastName
     ? `${user.firstName[0]}${user.lastName[0]}`
     : user?.email?.[0]?.toUpperCase() || 'U';
@@ -29,15 +31,40 @@ export function Navbar({ user }: NavbarProps) {
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img
-            src={logo}
-            alt="KanBe Logo"
-            className="w-12 h-12 rounded-lg object-cover"
-          />
-          <h1 className="text-2xl font-semibold" data-testid="text-app-title">
-            KanBe
-          </h1>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <img
+              src={logo}
+              alt="KanBe Logo"
+              className="w-12 h-12 rounded-lg object-cover"
+            />
+            <h1 className="text-2xl font-semibold" data-testid="text-app-title">
+              KanBe
+            </h1>
+          </div>
+
+          {user && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/board')}
+                className="flex items-center gap-2"
+                data-testid="nav-board"
+              >
+                <Kanban className="w-4 h-4" />
+                Доска
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/analytics')}
+                className="flex items-center gap-2"
+                data-testid="nav-analytics"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Аналитика
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
