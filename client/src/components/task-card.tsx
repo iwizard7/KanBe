@@ -101,7 +101,7 @@ export function TaskCard({ task, onEdit, onDelete, isDragging }: TaskCardProps) 
       <div className="flex items-center gap-2">
         <Badge
           variant="outline"
-          className={`text-xs px-2 py-0.5 ${priority.bg} border-current`}
+          className={`text-xs px-2 py-0.5 ${priority.bg} ${priority.color} border-current`}
           data-testid={`badge-priority-${task.id}`}
         >
           <div className={`w-1.5 h-1.5 rounded-full mr-1 ${priority.bg}`} />
