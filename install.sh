@@ -592,16 +592,16 @@ async function createAdmin() {
         }
 
         // Проверяем, существует ли уже пользователь с таким email
-        const existingUser = db
+        const existingUsers = db
             .select()
             .from(users)
             .where(eq(users.email, email))
             .limit(1);
 
-        if (existingUser.length > 0) {
+        if (existingUsers.length > 0) {
             console.log('ℹ️  Пользователь с таким email уже существует, пропускаем создание');
             console.log('📧 Email:', email);
-            console.log('🆔 ID пользователя:', existingUser[0].id);
+            console.log('🆔 ID пользователя:', existingUsers[0].id);
             return;
         }
 
