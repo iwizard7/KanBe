@@ -14,6 +14,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
     if (!req.user) {
+      console.error(`[AUTH ERROR] 401 Authentication failed - IP: ${req.ip}, URL: ${req.originalUrl}, User-Agent: ${req.get('User-Agent')}`);
       return res.status(401).json({ message: "Authentication failed" });
     }
     const user = req.user as any;

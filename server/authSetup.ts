@@ -23,5 +23,6 @@ export const isAuthenticated = (req: any, res: any, next: any) => {
   if (req.isAuthenticated()) {
     return next();
   }
+  console.error(`[AUTH ERROR] 401 Unauthorized - IP: ${req.ip}, URL: ${req.originalUrl}, User-Agent: ${req.get('User-Agent')}`);
   res.status(401).json({ message: "Unauthorized" });
 };

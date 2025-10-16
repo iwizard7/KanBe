@@ -119,6 +119,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
+    console.error(`[AUTH ERROR] 401 Unauthorized - Not authenticated or no expires_at - IP: ${req.ip}, URL: ${req.originalUrl}, User-Agent: ${req.get('User-Agent')}, isAuthenticated: ${req.isAuthenticated()}, expires_at: ${user?.expires_at}`);
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -129,6 +130,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   const refreshToken = user.refresh_token;
   if (!refreshToken) {
+    console.error(`[AUTH ERROR] 401 Unauthorized - No refresh token - IP: ${req.ip}, URL: ${req.originalUrl}, User-Agent: ${req.get('User-Agent')}`);
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
@@ -139,6 +141,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     updateUserSession(user, tokenResponse);
     return next();
   } catch (error) {
+    console.error(`[AUTH ERROR] 401 Unauthorized - Token refresh failed - IP: ${req.ip}, URL: ${req.originalUrl}, User-Agent: ${req.get('User-Agent')}, Error: ${error}`);
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
