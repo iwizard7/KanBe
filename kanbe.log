@@ -1,0 +1,11 @@
+2:33:14 PM [express] serving on port 3000
+2:33:24 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+2:33:29 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+2:33:30 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+2:33:36 PM [express] POST /api/auth/login 401 in 70ms
+2:33:37 PM [express] POST /api/auth/login 401 in 61ms
+2:33:37 PM [express] POST /api/auth/login 401 in 65ms
+2:33:38 PM [express] POST /api/auth/login 401 in 65ms
+2:33:38 PM [express] POST /api/auth/login 401 in 68ms
+2:33:38 PM [express] POST /api/auth/login 401 in 64ms
+2:34:12 PM [express] POST /api/auth/login 401 in 89ms
