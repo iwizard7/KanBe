@@ -363,6 +363,24 @@ download_code() {
         if git remote get-url origin 2>/dev/null | grep -q "iwizard7/KanBe"; then
             print_info "Обновление существующего репозитория..."
 
+            # Останавливаем сервис перед обновлением
+            print_info "Остановка KanBe сервиса перед обновлением..."
+            case $PLATFORM in
+                "macos")
+                    if launchctl list | grep -q kanbe 2>/dev/null; then
+                        launchctl stop com.kanbe.app 2>/dev/null || true
+                        launchctl unload ~/Library/LaunchAgents/com.kanbe.app.plist 2>/dev/null || true
+                        print_info "Launchd сервис остановлен"
+                    fi
+                    ;;
+                "linux"|"raspberry-pi")
+                    if command -v systemctl &> /dev/null && sudo systemctl is-active --quiet kanbe 2>/dev/null; then
+                        sudo systemctl stop kanbe 2>/dev/null || true
+                        print_info "Systemd сервис остановлен"
+                    fi
+                    ;;
+            esac
+
             # Сохраняем базу данных перед обновлением
             if [ -f "kanbe.db" ]; then
                 print_info "Сохранение базы данных перед обновлением..."
