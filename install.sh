@@ -563,14 +563,14 @@ create_first_user() {
     cat > create_admin.js << 'EOF'
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { users } from './shared/schema.ts';
+import * as schema from './shared/schema.js';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 
 console.log('Создание администратора...');
 
-const sqlite = new Database('./kanbe.db');
-const db = drizzle({ client: sqlite });
+const sqlite = new Database('./data/kanbe.db');
+const db = drizzle({ client: sqlite, schema });
 
 async function createAdmin() {
     const email = process.argv[2];
@@ -594,8 +594,8 @@ async function createAdmin() {
         // Проверяем, существует ли уже пользователь с таким email
         const existingUsers = await db
             .select()
-            .from(users)
-            .where(eq(users.email, email))
+            .from(schema.users)
+            .where(eq(schema.users.email, email))
             .limit(1);
 
         if (existingUsers.length > 0) {
@@ -608,7 +608,7 @@ async function createAdmin() {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const [user] = await db
-            .insert(users)
+            .insert(schema.users)
             .values({
                 email,
                 password: hashedPassword,
