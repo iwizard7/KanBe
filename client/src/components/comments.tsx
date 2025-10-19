@@ -31,10 +31,8 @@ export function Comments({ taskId }: CommentsProps) {
 
   // Create comment mutation
   const createCommentMutation = useMutation({
-    mutationFn: async (content: string) => {
-      const res = await apiRequest('POST', `/api/tasks/${taskId}/comments`, { content });
-      return await res.json();
-    },
+    mutationFn: (content: string) =>
+      apiRequest('POST', `/api/tasks/${taskId}/comments`, { content }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/tasks/${taskId}/comments`] });
       setNewComment("");
@@ -43,10 +41,8 @@ export function Comments({ taskId }: CommentsProps) {
 
   // Update comment mutation
   const updateCommentMutation = useMutation({
-    mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
-      const res = await apiRequest('PATCH', `/api/tasks/${taskId}/comments/${commentId}`, { content });
-      return await res.json();
-    },
+    mutationFn: ({ commentId, content }: { commentId: string; content: string }) =>
+      apiRequest('PATCH', `/api/tasks/${taskId}/comments/${commentId}`, { content }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/tasks/${taskId}/comments`] });
       setEditingComment(null);
@@ -56,9 +52,8 @@ export function Comments({ taskId }: CommentsProps) {
 
   // Delete comment mutation
   const deleteCommentMutation = useMutation({
-    mutationFn: async (commentId: string) => {
-      await apiRequest('DELETE', `/api/tasks/${taskId}/comments/${commentId}`);
-    },
+    mutationFn: (commentId: string) =>
+      apiRequest('DELETE', `/api/tasks/${taskId}/comments/${commentId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/tasks/${taskId}/comments`] });
     },
