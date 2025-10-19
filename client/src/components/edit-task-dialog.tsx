@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { X, Plus } from "lucide-react";
-import { Comments } from "@/components/comments";
+
 import { TAG_COLORS, PRIORITY_LEVELS, type Task, type Subtask, type PriorityLevel } from "@shared/schema";
 
 interface EditTaskDialogProps {
@@ -118,9 +118,8 @@ export function EditTaskDialog({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="details">Детали</TabsTrigger>
-            <TabsTrigger value="comments">Комментарии</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4 py-4">
@@ -317,9 +316,7 @@ export function EditTaskDialog({
           </div>
           </TabsContent>
 
-          <TabsContent value="comments" className="py-4">
-            {task && <Comments taskId={task.id} />}
-          </TabsContent>
+
         </Tabs>
 
         <DialogFooter>
