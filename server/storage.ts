@@ -89,11 +89,28 @@ export class DatabaseStorage implements IStorage {
 
   // Task operations
   async getTasks(userId: string): Promise<Task[]> {
-    return await db
+    const taskList = await db
       .select()
       .from(tasks)
       .where(eq(tasks.userId, userId))
       .orderBy(tasks.status, tasks.position);
+
+    // Add comment count to each task
+    const tasksWithComments = await Promise.all(
+      taskList.map(async (task) => {
+        const commentCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(comments)
+          .where(eq(comments.taskId, task.id));
+
+        return {
+          ...task,
+          commentCount: commentCount[0]?.count || 0,
+        };
+      })
+    );
+
+    return tasksWithComments;
   }
 
   async getTask(id: string, userId: string): Promise<Task | undefined> {
