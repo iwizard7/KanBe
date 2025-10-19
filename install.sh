@@ -397,13 +397,14 @@ download_code() {
             fi
 
             # Пытаемся обновить с разных веток
-            if git pull origin main 2>/dev/null; then
+            if git pull origin main; then
                 print_success "Репозиторий обновлен с ветки main"
-            elif git pull origin master 2>/dev/null; then
+            elif git pull origin master; then
                 print_success "Репозиторий обновлен с ветки master"
             else
                 print_warning "Не удалось обновить репозиторий, продолжаем с текущей версией"
-                print_info "Возможно есть конфликты. Попробуйте разрешить их вручную."
+                print_info "Проверьте статус git: git status"
+                print_info "Возможно есть конфликты или detached HEAD. Попробуйте: git checkout main && git pull"
             fi
 
             # Восстанавливаем локальные изменения, если они были сохранены
