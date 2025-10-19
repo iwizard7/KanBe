@@ -13,7 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { X, Plus } from "lucide-react";
+import { Comments } from "@/components/comments";
 import { TAG_COLORS, PRIORITY_LEVELS, type Task, type Subtask, type PriorityLevel } from "@shared/schema";
 
 interface EditTaskDialogProps {
@@ -107,7 +109,7 @@ export function EditTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]" data-testid="dialog-edit-task">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden" data-testid="dialog-edit-task">
         <DialogHeader>
           <DialogTitle>Редактировать задачу</DialogTitle>
           <DialogDescription>
@@ -115,7 +117,13 @@ export function EditTaskDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">Детали</TabsTrigger>
+            <TabsTrigger value="comments">Комментарии</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details" className="space-y-4 py-4">
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="edit-title">Название *</Label>
@@ -307,7 +315,12 @@ export function EditTaskDialog({
               Максимум 10 меток на задачу
             </p>
           </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="comments" className="py-4">
+            {task && <Comments taskId={task.id} />}
+          </TabsContent>
+        </Tabs>
 
         <DialogFooter>
           <Button 
