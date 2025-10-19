@@ -80,7 +80,7 @@ export const updateTaskSchema = insertTaskSchema.partial().extend({
 // Types
 export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
-export type Task = typeof tasks.$inferSelect & { commentCount?: number };
+export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type UpdateTask = z.infer<typeof updateTaskSchema>;
 

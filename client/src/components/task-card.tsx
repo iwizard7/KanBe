@@ -217,13 +217,13 @@ export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: 
         </div>
       )}
 
-      {/* Comments Count */}
-      {task.commentCount && task.commentCount > 0 && (
+      {/* Comments Count - temporarily disabled */}
+      {/* {task.commentCount && task.commentCount > 0 && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <MessageSquare className="w-3 h-3" />
           <span>{task.commentCount} комментари{task.commentCount === 1 ? 'й' : task.commentCount < 5 ? 'я' : 'ев'}</span>
         </div>
-      )}
+      )} */}
 
       {/* Footer with deadline and timestamp */}
       <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
