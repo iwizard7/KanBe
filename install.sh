@@ -574,7 +574,7 @@ create_first_user() {
     fi
 
     # Проверяем, что база данных существует и таблицы созданы
-    if [ ! -f "kanbe.db" ]; then
+    if [ ! -f "data/kanbe.db" ]; then
         print_error "База данных не найдена. Убедитесь, что настройка БД выполнена."
         return 1
     fi
