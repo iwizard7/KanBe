@@ -7,6 +7,7 @@ import { MessageSquare, Send, Edit2, Trash2, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
+import { apiRequest } from "@/lib/queryClient";
 import type { Comment } from "@shared/schema";
 
 interface CommentsProps {
@@ -21,27 +22,21 @@ export function Comments({ taskId }: CommentsProps) {
 
   // Fetch comments
   const { data: comments = [], isLoading } = useQuery({
-    queryKey: ["comments", taskId],
+    queryKey: [`/api/tasks/${taskId}/comments`],
     queryFn: async () => {
-      const response = await fetch(`/api/tasks/${taskId}/comments`);
-      if (!response.ok) throw new Error("Failed to fetch comments");
-      return response.json();
+      const res = await apiRequest('GET', `/api/tasks/${taskId}/comments`);
+      return await res.json();
     },
   });
 
   // Create comment mutation
   const createCommentMutation = useMutation({
     mutationFn: async (content: string) => {
-      const response = await fetch(`/api/tasks/${taskId}/comments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
-      });
-      if (!response.ok) throw new Error("Failed to create comment");
-      return response.json();
+      const res = await apiRequest('POST', `/api/tasks/${taskId}/comments`, { content });
+      return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tasks/${taskId}/comments`] });
       setNewComment("");
     },
   });
@@ -49,16 +44,11 @@ export function Comments({ taskId }: CommentsProps) {
   // Update comment mutation
   const updateCommentMutation = useMutation({
     mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
-      const response = await fetch(`/api/tasks/${taskId}/comments/${commentId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
-      });
-      if (!response.ok) throw new Error("Failed to update comment");
-      return response.json();
+      const res = await apiRequest('PATCH', `/api/tasks/${taskId}/comments/${commentId}`, { content });
+      return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tasks/${taskId}/comments`] });
       setEditingComment(null);
       setEditContent("");
     },
@@ -67,14 +57,10 @@ export function Comments({ taskId }: CommentsProps) {
   // Delete comment mutation
   const deleteCommentMutation = useMutation({
     mutationFn: async (commentId: string) => {
-      const response = await fetch(`/api/tasks/${taskId}/comments/${commentId}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Failed to delete comment");
-      return response;
+      await apiRequest('DELETE', `/api/tasks/${taskId}/comments/${commentId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tasks/${taskId}/comments`] });
     },
   });
 
