@@ -598,14 +598,15 @@ async function createAdmin() {
             .where(eq(schema.users.email, email))
             .limit(1);
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         if (existingUsers.length > 0) {
-            console.log('ℹ️  Пользователь с таким email уже существует, пропускаем создание');
+            await db.update(schema.users).set({ password: hashedPassword }).where(eq(schema.users.email, email));
+            console.log('ℹ️  Пользователь с таким email уже существует, пароль обновлен');
             console.log('📧 Email:', email);
             console.log('🆔 ID пользователя:', existingUsers[0].id);
             return;
         }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
 
         const [user] = await db
             .insert(schema.users)
@@ -771,14 +772,12 @@ create_launchd_service() {
 EOF
 
     # Загрузка сервиса
-    launchctl load "$PLIST_FILE"
-
-    # Явный запуск сервиса после загрузки
-    sleep 2
-    launchctl start com.kanbe.app
-
-    print_success "Launchd service создан: $PLIST_FILE"
-    print_info "Сервис загружен и запущен"
+    if launchctl bootstrap gui/$(id -u) "$PLIST_FILE"; then
+        print_success "Launchd service создан и загружен: $PLIST_FILE"
+        print_info "Сервис запущен"
+    else
+        print_warning "Не удалось загрузить launchd сервис, попробуйте вручную: launchctl bootstrap gui/$(id -u) $PLIST_FILE"
+    fi
 }
 
 # Основная функция установки
