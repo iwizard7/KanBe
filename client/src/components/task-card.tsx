@@ -17,7 +17,13 @@ interface TaskCardProps {
 
 export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: TaskCardProps) {
   // Parse tags from JSON string to array
-  const tagsArray = task.tags ? JSON.parse(task.tags) : [];
+  let tagsArray: string[] = [];
+  try {
+    tagsArray = task.tags && task.tags.trim() ? JSON.parse(task.tags) : [];
+  } catch (error) {
+    console.warn('Failed to parse task tags:', task.tags, error);
+    tagsArray = [];
+  }
   const visibleTags = tagsArray.slice(0, 3);
   const remainingCount = tagsArray.length - 3;
 
@@ -148,7 +154,7 @@ export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: 
       )}
 
       {/* Tags */}
-      {task.tags && task.tags.length > 0 && (
+      {tagsArray.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           {visibleTags.map((tag: string, index: number) => {
             const { bg, label } = getTagColor(tag);
