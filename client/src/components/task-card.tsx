@@ -208,7 +208,7 @@ export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: 
       )}
 
       {/* Time Estimate */}
-      {task.timeEstimate && task.timeEstimate > 0 && (
+      {task.timeEstimate && typeof task.timeEstimate === 'number' && task.timeEstimate > 0 && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Timer className="w-3 h-3" />
           <span>Оценка: {task.timeEstimate} мин</span>
@@ -216,7 +216,7 @@ export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: 
       )}
 
       {/* Time Spent */}
-      {task.timeSpent && task.timeSpent > 0 && (
+      {task.timeSpent && typeof task.timeSpent === 'number' && task.timeSpent > 0 && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Timer className="w-3 h-3" />
           <span>Затрачено: {task.timeSpent} мин</span>
@@ -247,7 +247,7 @@ export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: 
           )}
         </div>
         <div className="text-right">
-          {task.lastMovedAt && task.lastMovedAt !== task.createdAt ? (
+          {task.lastMovedAt && typeof task.lastMovedAt === 'number' && task.lastMovedAt > 0 && task.lastMovedAt !== task.createdAt ? (
             <div>
               <div className="text-muted-foreground">
                 Перемещена {formatDistanceToNow(new Date(task.lastMovedAt * 1000), {
@@ -264,10 +264,13 @@ export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: 
             </div>
           ) : (
             <span data-testid={`text-task-date-${task.id}`}>
-              {formatDistanceToNow(new Date(task.createdAt * 1000), {
-                addSuffix: true,
-                locale: ru
-              })}
+              {task.createdAt && typeof task.createdAt === 'number' && task.createdAt > 0
+                ? formatDistanceToNow(new Date(task.createdAt * 1000), {
+                    addSuffix: true,
+                    locale: ru
+                  })
+                : 'Недавно'
+              }
             </span>
           )}
         </div>
