@@ -384,9 +384,16 @@ download_code() {
             esac
 
             # Сохраняем базу данных перед обновлением
-            if [ -f "kanbe.db" ]; then
+            if [ -f "data/kanbe.db" ]; then
                 print_info "Сохранение базы данных перед обновлением..."
-                cp kanbe.db kanbe.db.backup.$(date +%Y%m%d_%H%M%S)
+                cp data/kanbe.db data/kanbe.db.backup.$(date +%Y%m%d_%H%M%S)
+            fi
+
+            # Сохраняем локальные изменения перед обновлением
+            if git status --porcelain | grep -q .; then
+                print_info "Сохранение локальных изменений..."
+                git stash push -m "Auto-stash before update $(date)"
+                STASHED=true
             fi
 
             # Пытаемся обновить с разных веток
@@ -396,7 +403,18 @@ download_code() {
                 print_success "Репозиторий обновлен с ветки master"
             else
                 print_warning "Не удалось обновить репозиторий, продолжаем с текущей версией"
-                print_info "Возможно есть локальные изменения. Используйте 'git stash' для их сохранения."
+                print_info "Возможно есть конфликты. Попробуйте разрешить их вручную."
+            fi
+
+            # Восстанавливаем локальные изменения, если они были сохранены
+            if [ "$STASHED" = true ]; then
+                print_info "Восстановление локальных изменений..."
+                if git stash pop 2>/dev/null; then
+                    print_success "Локальные изменения восстановлены"
+                else
+                    print_warning "Не удалось восстановить локальные изменения. Возможно конфликты."
+                    print_info "Используйте 'git stash pop' вручную для восстановления."
+                fi
             fi
         else
             print_info "Репозиторий найден, но remote URL отличается"
