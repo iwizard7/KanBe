@@ -122,7 +122,7 @@ export function EditTaskDialog({
             <TabsTrigger value="details">Детали</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="details" className="space-y-4 py-4">
+          <TabsContent value="details" className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="edit-title">Название *</Label>
