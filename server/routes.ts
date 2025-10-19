@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./authSetup";
-import { insertTaskSchema, updateTaskSchema, insertCommentSchema, updateCommentSchema } from "@shared/schema";
+import { insertTaskSchema, updateTaskSchema } from "@shared/schema";
 import { z } from "zod";
 import { passport } from "./auth";
 
@@ -184,106 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Comment routes - all protected
 
-  // Get comments for a task
-  app.get("/api/tasks/:taskId/comments", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const comments = await storage.getComments(req.params.taskId, userId);
-      res.json(comments);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-      res.status(500).json({ message: "Failed to fetch comments" });
-    }
-  });
-
-  // Create comment
-  app.post("/api/tasks/:taskId/comments", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-
-      // Check if task exists and belongs to user
-      const task = await storage.getTask(req.params.taskId, userId);
-      if (!task) {
-        return res.status(404).json({ message: "Task not found" });
-      }
-
-      // Validate request body
-      const validatedData = insertCommentSchema.parse({
-        ...req.body,
-        taskId: req.params.taskId,
-      });
-
-      const comment = await storage.createComment({
-        ...validatedData,
-        userId,
-      });
-      res.status(201).json(comment);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: error.errors
-        });
-      }
-      console.error("Error creating comment:", error);
-      res.status(500).json({ message: "Failed to create comment" });
-    }
-  });
-
-  // Update comment
-  app.patch("/api/tasks/:taskId/comments/:commentId", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-
-      // Check if comment exists and belongs to user
-      const existingComment = await storage.getComment(req.params.commentId, userId);
-      if (!existingComment) {
-        return res.status(404).json({ message: "Comment not found" });
-      }
-
-      // Validate request body
-      const validatedData = updateCommentSchema.parse({
-        id: req.params.commentId,
-        ...req.body,
-      });
-
-      const comment = await storage.updateComment({
-        ...validatedData,
-        userId,
-      });
-      res.json(comment);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: error.errors
-        });
-      }
-      console.error("Error updating comment:", error);
-      res.status(500).json({ message: "Failed to update comment" });
-    }
-  });
-
-  // Delete comment
-  app.delete("/api/tasks/:taskId/comments/:commentId", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-
-      // Check if comment exists and belongs to user
-      const existingComment = await storage.getComment(req.params.commentId, userId);
-      if (!existingComment) {
-        return res.status(404).json({ message: "Comment not found" });
-      }
-
-      await storage.deleteComment(req.params.commentId, userId);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-      res.status(500).json({ message: "Failed to delete comment" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;

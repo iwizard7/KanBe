@@ -1,15 +1,11 @@
 import {
   users,
   tasks,
-  comments,
   type User,
   type UpsertUser,
   type Task,
   type InsertTask,
   type UpdateTask,
-  type Comment,
-  type InsertComment,
-  type UpdateComment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -30,12 +26,7 @@ export interface IStorage {
   deleteTask(id: string, userId: string): Promise<void>;
   updateTaskPosition(id: string, userId: string, status: string, position: number): Promise<Task>;
 
-  // Comment operations
-  getComments(taskId: string, userId: string): Promise<Comment[]>;
-  getComment(id: string, userId: string): Promise<Comment | undefined>;
-  createComment(comment: InsertComment & { userId: string }): Promise<Comment>;
-  updateComment(comment: UpdateComment & { userId: string }): Promise<Comment>;
-  deleteComment(id: string, userId: string): Promise<void>;
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -168,59 +159,7 @@ export class DatabaseStorage implements IStorage {
     return task;
   }
 
-  // Comment operations
-  async getComments(taskId: string, userId: string): Promise<Comment[]> {
-    // First check if task belongs to user
-    const task = await this.getTask(taskId, userId);
-    if (!task) {
-      return [];
-    }
 
-    return await db
-      .select()
-      .from(comments)
-      .where(eq(comments.taskId, taskId))
-      .orderBy(desc(comments.createdAt));
-  }
-
-  async getComment(id: string, userId: string): Promise<Comment | undefined> {
-    const [comment] = await db
-      .select()
-      .from(comments)
-      .where(and(eq(comments.id, id), eq(comments.userId, userId)));
-    return comment;
-  }
-
-  async createComment(commentData: InsertComment & { userId: string }): Promise<Comment> {
-    const { userId, ...data } = commentData;
-    const [comment] = await db
-      .insert(comments)
-      .values({
-        ...data,
-        userId,
-      })
-      .returning();
-    return comment;
-  }
-
-  async updateComment(commentData: UpdateComment & { userId: string }): Promise<Comment> {
-    const { id, userId, ...updateData } = commentData;
-    const [comment] = await db
-      .update(comments)
-      .set({
-        ...updateData,
-        updatedAt: sql`(strftime('%s', 'now'))`,
-      })
-      .where(and(eq(comments.id, id), eq(comments.userId, userId)))
-      .returning();
-    return comment;
-  }
-
-  async deleteComment(id: string, userId: string): Promise<void> {
-    await db
-      .delete(comments)
-      .where(and(eq(comments.id, id), eq(comments.userId, userId)));
-  }
 }
 
 export const storage = new DatabaseStorage();

@@ -136,56 +136,18 @@ export const updateTagSchema = insertTagSchema.partial().extend({
   id: z.string(),
 });
 
-// Comments table for task discussions
-export const comments = sqliteTable("comments", {
-  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
-  taskId: text("task_id").notNull().references(() => tasks.id, { onDelete: 'cascade' }),
-  userId: text("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  content: text("content").notNull(),
-  createdAt: real("created_at").default(sql`(strftime('%s', 'now'))`).notNull(),
-  updatedAt: real("updated_at").default(sql`(strftime('%s', 'now'))`).notNull(),
-});
-
-// Comments relations
-export const commentsRelations = relations(comments, ({ one }) => ({
-  task: one(tasks, {
-    fields: [comments.taskId],
-    references: [tasks.id],
-  }),
-  user: one(users, {
-    fields: [comments.userId],
-    references: [users.id],
-  }),
-}));
-
-// Update tasks relations to include comments
-export const tasksRelations = relations(tasks, ({ one, many }) => ({
+// Update tasks relations
+export const tasksRelations = relations(tasks, ({ one }) => ({
   user: one(users, {
     fields: [tasks.userId],
     references: [users.id],
   }),
-  comments: many(comments),
 }));
-
-// Zod schemas for comments
-export const insertCommentSchema = createInsertSchema(comments).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const updateCommentSchema = insertCommentSchema.partial().extend({
-  id: z.string(),
-});
 
 // Types
 export type Tag = typeof tags.$inferSelect;
 export type InsertTag = z.infer<typeof insertTagSchema>;
 export type UpdateTag = z.infer<typeof updateTagSchema>;
-
-export type Comment = typeof comments.$inferSelect;
-export type InsertComment = z.infer<typeof insertCommentSchema>;
-export type UpdateComment = z.infer<typeof updateCommentSchema>;
 
 // Subtask type
 export interface Subtask {
