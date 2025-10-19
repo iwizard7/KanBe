@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, GripVertical, CheckSquare, Clock, AlertTriangle, Timer, Link, MessageSquare } from "lucide-react";
+import { Pencil, Trash2, GripVertical, CheckSquare, Clock, AlertTriangle, Timer, Link } from "lucide-react";
 import type { Task, Subtask } from "@shared/schema";
 import { TAG_COLORS, PRIORITY_LEVELS } from "@shared/schema";
 import { formatDistanceToNow, isAfter, isBefore, addDays } from "date-fns";
@@ -217,13 +217,7 @@ export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: 
         </div>
       )}
 
-      {/* Comments Count - temporarily disabled */}
-      {/* {task.commentCount && task.commentCount > 0 && (
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <MessageSquare className="w-3 h-3" />
-          <span>{task.commentCount} комментари{task.commentCount === 1 ? 'й' : task.commentCount < 5 ? 'я' : 'ев'}</span>
-        </div>
-      )} */}
+
 
       {/* Footer with deadline and timestamp */}
       <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">

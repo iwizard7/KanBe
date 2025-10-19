@@ -98,12 +98,14 @@ export default function Board() {
 
   // Update task mutation
   const updateTaskMutation = useMutation({
-    mutationFn: async (data: { id: string; title?: string; description?: string; tags?: string[]; subtasks?: any[] }) => {
+    mutationFn: async (data: { id: string; title?: string; description?: string; tags?: string[]; subtasks?: any[]; priority?: PriorityLevel; dueDate?: Date; dependencies?: string[] }) => {
       const { id, ...updateData } = data;
       return await apiRequest('PATCH', `/api/tasks/${id}`, {
         ...updateData,
         tags: updateData.tags ? JSON.stringify(updateData.tags) : undefined,
         subtasks: updateData.subtasks ? JSON.stringify(updateData.subtasks) : undefined,
+        dueDate: updateData.dueDate ? Math.floor(updateData.dueDate.getTime() / 1000) : undefined,
+        dependencies: updateData.dependencies ? JSON.stringify(updateData.dependencies) : undefined,
       });
     },
     onSuccess: () => {
@@ -246,7 +248,7 @@ export default function Board() {
     });
   };
 
-  const updateTask = (data: { id: string; title: string; description: string; tags: string[]; subtasks?: any[] }) => {
+  const updateTask = (data: { id: string; title: string; description: string; tags: string[]; subtasks?: any[]; priority?: PriorityLevel }) => {
     updateTaskMutation.mutate(data);
   };
 
