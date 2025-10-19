@@ -1,8 +1,9 @@
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
-import { TaskCard } from "./task-card";
+import { VirtualizedTaskList } from "./virtualized-task-list";
 import type { Task } from "@shared/schema";
 import { PRIORITY_LEVELS } from "@shared/schema";
 
@@ -18,7 +19,7 @@ interface KanbanColumnProps {
   onDrop: (taskId: string, newStatus: string) => void;
 }
 
-export function KanbanColumn({
+export const KanbanColumn = React.memo<KanbanColumnProps>(function KanbanColumn({
   title,
   status,
   tasks,
@@ -127,22 +128,15 @@ export function KanbanColumn({
             </Button>
           </Card>
         ) : (
-          tasks.map((task) => (
-            <div
-              key={task.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, task.id)}
-            >
-              <TaskCard
-                task={task}
-                allTasks={allTasks}
-                onEdit={onEditTask}
-                onDelete={onDeleteTask}
-              />
-            </div>
-          ))
+          <VirtualizedTaskList
+            tasks={tasks}
+            allTasks={allTasks}
+            onEdit={onEditTask}
+            onDelete={onDeleteTask}
+            height={400}
+          />
         )}
       </div>
     </div>
   );
-}
+});

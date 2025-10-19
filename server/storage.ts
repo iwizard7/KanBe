@@ -20,13 +20,23 @@ export interface IStorage {
 
   // Task operations
   getTasks(userId: string): Promise<Task[]>;
+  getTasksPaginated(userId: string, options: {
+    offset: number;
+    limit: number;
+    status?: string;
+    priority?: string;
+    search?: string;
+  }): Promise<Task[]>;
+  getTasksCount(userId: string, filters?: {
+    status?: string;
+    priority?: string;
+    search?: string;
+  }): Promise<number>;
   getTask(id: string, userId: string): Promise<Task | undefined>;
   createTask(task: InsertTask): Promise<Task>;
   updateTask(task: UpdateTask): Promise<Task>;
   deleteTask(id: string, userId: string): Promise<void>;
   updateTaskPosition(id: string, userId: string, status: string, position: number): Promise<Task>;
-
-
 }
 
 export class DatabaseStorage implements IStorage {
@@ -85,6 +95,65 @@ export class DatabaseStorage implements IStorage {
       .from(tasks)
       .where(eq(tasks.userId, userId))
       .orderBy(tasks.status, tasks.position);
+  }
+
+  async getTasksPaginated(userId: string, options: {
+    offset: number;
+    limit: number;
+    status?: string;
+    priority?: string;
+    search?: string;
+  }): Promise<Task[]> {
+    let whereConditions = [eq(tasks.userId, userId)];
+
+    if (options.status) {
+      whereConditions.push(eq(tasks.status, options.status));
+    }
+
+    if (options.priority) {
+      whereConditions.push(eq(tasks.priority, options.priority));
+    }
+
+    if (options.search) {
+      // Search in title and description
+      whereConditions.push(sql`${tasks.title} LIKE ${`%${options.search}%`} OR ${tasks.description} LIKE ${`%${options.search}%`}`);
+    }
+
+    return await db
+      .select()
+      .from(tasks)
+      .where(and(...whereConditions))
+      .orderBy(tasks.status, tasks.position)
+      .limit(options.limit)
+      .offset(options.offset);
+  }
+
+  async getTasksCount(userId: string, filters?: {
+    status?: string;
+    priority?: string;
+    search?: string;
+  }): Promise<number> {
+    let whereConditions = [eq(tasks.userId, userId)];
+
+    if (filters?.status) {
+      whereConditions.push(eq(tasks.status, filters.status));
+    }
+
+    if (filters?.priority) {
+      whereConditions.push(eq(tasks.priority, filters.priority));
+    }
+
+    if (filters?.search) {
+      // Search in title and description
+      whereConditions.push(sql`${tasks.title} LIKE ${`%${filters.search}%`} OR ${tasks.description} LIKE ${`%${filters.search}%`}`);
+    }
+
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(tasks)
+      .where(and(...whereConditions));
+
+    return result[0]?.count || 0;
   }
 
   async getTask(id: string, userId: string): Promise<Task | undefined> {

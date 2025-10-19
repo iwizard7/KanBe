@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,7 @@ interface EditTaskDialogProps {
   task: Task | null;
 }
 
-export function EditTaskDialog({
+export const EditTaskDialog = React.memo<EditTaskDialogProps>(function EditTaskDialog({
   open,
   onOpenChange,
   onUpdateTask,
@@ -338,4 +338,4 @@ export function EditTaskDialog({
       </DialogContent>
     </Dialog>
   );
-}
+});

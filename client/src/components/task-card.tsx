@@ -1,3 +1,4 @@
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ interface TaskCardProps {
   isDragging?: boolean;
 }
 
-export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: TaskCardProps) {
+export const TaskCard = React.memo<TaskCardProps>(function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }) {
   // Parse tags from JSON string to array
   let tagsArray: string[] = [];
   try {
@@ -277,4 +278,4 @@ export function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }: 
       </div>
     </Card>
   );
-}
+});

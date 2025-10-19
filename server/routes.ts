@@ -48,13 +48,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task routes - all protected
-  
-    // Get all tasks for user
+
+    // Get all tasks for user with pagination
     app.get("/api/tasks", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const tasks = await storage.getTasks(userId);
-      res.json(tasks);
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50; // Default 50 tasks per page
+      const status = req.query.status as string;
+      const priority = req.query.priority as string;
+      const search = req.query.search as string;
+
+      const offset = (page - 1) * limit;
+
+      const tasks = await storage.getTasksPaginated(userId, {
+        offset,
+        limit,
+        status,
+        priority,
+        search,
+      });
+
+      // Get total count for pagination metadata
+      const totalCount = await storage.getTasksCount(userId, {
+        status,
+        priority,
+        search,
+      });
+
+      res.json({
+        tasks,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          hasNext: page * limit < totalCount,
+          hasPrev: page > 1,
+        },
+      });
     } catch (error) {
       console.error("Error fetching tasks:", error);
       res.status(500).json({ message: "Failed to fetch tasks" });

@@ -37,11 +37,46 @@ export default function Board() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [defaultStatus, setDefaultStatus] = useState<string>('todo');
 
-  // Fetch tasks
-  const { data: tasks = [], isLoading } = useQuery<Task[]>({
-    queryKey: ['/api/tasks'],
+  // Fetch tasks with pagination and improved caching
+  const { data: tasksResponse, isLoading } = useQuery<{
+    tasks: Task[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  }>({
+    queryKey: ['/api/tasks', { page: 1, limit: 1000 }], // Load all tasks for now, but with pagination ready
+    queryFn: async (): Promise<{
+      tasks: Task[];
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+      };
+    }> => {
+      const res = await fetch('/api/tasks?page=1&limit=1000', {
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${res.statusText}`);
+      }
+      return res.json();
+    },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   });
+
+  const tasks = tasksResponse?.tasks || [];
 
   // Create task mutation
   const createTaskMutation = useMutation({
