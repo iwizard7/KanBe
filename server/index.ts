@@ -106,9 +106,9 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use PORT from environment, default to 3000 for both development and production
+  // Use PORT from environment, default to 3001 for both development and production
   // This serves both the API and the client
-  const port = parseInt(process.env.PORT || '3000', 10);
+  const port = parseInt(process.env.PORT || '3001', 10);
 
   server.listen({
     port,
