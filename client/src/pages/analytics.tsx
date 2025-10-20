@@ -44,9 +44,6 @@ import type { Task } from "@shared/schema";
 import { PRIORITY_LEVELS } from "@shared/schema";
 import { Loader2 } from "lucide-react";
 import * as XLSX from 'xlsx';
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 interface AnalyticsData {
   totalTasks: number;
@@ -189,6 +186,9 @@ export default function Analytics() {
   const handleExportPDF = async () => {
     try {
       const { default: html2canvas } = await import('html2canvas');
+      const pdfMake = (await import('pdfmake/build/pdfmake')).default;
+      const pdfFonts = await import('pdfmake/build/vfs_fonts');
+      pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
 
       const docDefinition: any = {
         content: [
