@@ -98,10 +98,10 @@ export const TAG_COLORS = [
 
 // Priority levels
 export const PRIORITY_LEVELS = [
-  { name: 'low', label: 'Низкий', color: 'text-green-700', bg: 'bg-green-200 dark:bg-green-800' },
-  { name: 'medium', label: 'Средний', color: 'text-yellow-700', bg: 'bg-yellow-200 dark:bg-yellow-800' },
-  { name: 'high', label: 'Высокий', color: 'text-orange-700', bg: 'bg-orange-200 dark:bg-orange-800' },
-  { name: 'urgent', label: 'Срочный', color: 'text-red-700', bg: 'bg-red-200 dark:bg-red-800' },
+  { name: 'low', label: 'Низкий', color: 'text-green-600' },
+  { name: 'medium', label: 'Средний', color: 'text-yellow-600' },
+  { name: 'high', label: 'Высокий', color: 'text-orange-600' },
+  { name: 'urgent', label: 'Срочный', color: 'text-red-600' },
 ] as const;
 
 export type TagColor = typeof TAG_COLORS[number]['name'];

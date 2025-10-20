@@ -69,7 +69,12 @@ export const TaskCard = React.memo<TaskCardProps>(function TaskCard({ task, allT
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <GripVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${priority.bg}`} title={priority.label} />
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+            task.priority === 'urgent' ? 'bg-red-500' :
+            task.priority === 'high' ? 'bg-orange-500' :
+            task.priority === 'medium' ? 'bg-yellow-500' :
+            'bg-green-500'
+          }`} title={priority.label} />
           <h3 className="font-medium line-clamp-2 flex-1" data-testid={`text-task-title-${task.id}`}>
             {task.title}
           </h3>
@@ -113,10 +118,10 @@ export const TaskCard = React.memo<TaskCardProps>(function TaskCard({ task, allT
       <div className="flex items-center gap-2">
         <Badge
           variant="outline"
-          className={`text-xs px-2 py-0.5 ${priority.bg} ${priority.color} border-current`}
+          className={`text-xs px-2 py-0.5 ${priority.color} border-current`}
           data-testid={`badge-priority-${task.id}`}
         >
-          <div className={`w-1.5 h-1.5 rounded-full mr-1 ${priority.bg}`} />
+          <div className={`w-1.5 h-1.5 rounded-full mr-1 bg-current`} />
           {priority.label}
         </Badge>
       </div>
