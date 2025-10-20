@@ -333,7 +333,7 @@ export function CreateTaskDialog({
                 <SelectValue placeholder="Добавить зависимость" />
               </SelectTrigger>
               <SelectContent>
-                {existingTasks
+                {(existingTasks || [])
                   .filter(task => !dependencies.includes(task.id))
                   .map((task) => (
                     <SelectItem key={task.id} value={task.id}>
