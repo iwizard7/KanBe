@@ -63,10 +63,41 @@ export default function Analytics() {
   const [timeRange, setTimeRange] = useState<string>("7d");
 
   // Fetch tasks
-  const { data: tasks = [], isLoading } = useQuery<Task[]>({
-    queryKey: ['/api/tasks'],
+  const { data: tasksResponse, isLoading } = useQuery<{
+    tasks: Task[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  }>({
+    queryKey: ['/api/tasks', { page: 1, limit: 1000 }],
+    queryFn: async (): Promise<{
+      tasks: Task[];
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+      };
+    }> => {
+      const res = await fetch('/api/tasks?page=1&limit=1000', {
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${res.statusText}`);
+      }
+      return res.json();
+    },
     enabled: !!user,
   });
+
+  const tasks = tasksResponse?.tasks || [];
 
   // Redirect to login if not authenticated
   useEffect(() => {
