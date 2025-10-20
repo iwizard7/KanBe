@@ -15,19 +15,22 @@ try {
 const app = express();
 
 // Rate limiting
+const isProduction = process.env.NODE_ENV === 'production';
+
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: isProduction ? 100 : 1000, // Higher limit for development
   message: {
     message: "Too many requests from this IP, please try again later."
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => !isProduction && !!req.headers['user-agent']?.includes('Mozilla'), // Skip for browser requests in dev
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 login attempts per windowMs
+  max: isProduction ? 5 : 50, // Higher limit for development
   message: {
     message: "Too many login attempts from this IP, please try again later."
   },
@@ -38,9 +41,11 @@ const authLimiter = rateLimit({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Apply rate limiting to API routes
-app.use('/api/', generalLimiter);
-app.use('/api/auth/login', authLimiter);
+// Apply rate limiting to API routes (only in production)
+if (isProduction) {
+  app.use('/api/', generalLimiter);
+  app.use('/api/auth/login', authLimiter);
+}
 
 app.use((req, res, next) => {
   const start = Date.now();
