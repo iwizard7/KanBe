@@ -177,8 +177,10 @@ install_dependencies() {
             fi
             ;;
         "raspberry-pi")
-            print_info "Установка зависимостей для Raspberry Pi..."
-            npm install --no-audit --no-fund --timeout=60000 --legacy-peer-deps
+            print_info "Установка зависимостей для Raspberry Pi (оптимизировано для ARMv7)..."
+            # Оптимизации для Raspberry Pi 3
+            export NODE_OPTIONS="--max-old-space-size=256"  # Ограничение памяти до 256MB
+            npm install --no-audit --no-fund --timeout=120000 --legacy-peer-deps --production=false
             ;;
         "linux")
             print_info "Установка зависимостей для Linux..."
@@ -684,7 +686,53 @@ create_systemd_service() {
     WORKING_DIR="$(pwd)"
     EXEC_START="$WORKING_DIR/node_modules/.bin/tsx $WORKING_DIR/server/index.ts"
 
-    sudo tee $SERVICE_FILE > /dev/null << EOF
+    # Специальные оптимизации для Raspberry Pi
+    if [ "$PLATFORM" = "raspberry-pi" ]; then
+        sudo tee $SERVICE_FILE > /dev/null << EOF
+[Unit]
+Description=KanBe Kanban Application (Raspberry Pi Optimized)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$WORKING_DIR
+ExecStart=$EXEC_START
+Restart=always
+RestartSec=15
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=DATABASE_URL=$WORKING_DIR/data/kanbe.db
+Environment=SESSION_SECRET=$SESSION_SECRET
+
+# Raspberry Pi оптимизации
+Environment=NODE_OPTIONS=--max-old-space-size=256 --optimize-for-size
+Environment=UV_THREADPOOL_SIZE=2
+Environment=SQLITE_BUSY_TIMEOUT=30000
+
+# Ограничения ресурсов для Raspberry Pi 3
+MemoryLimit=256M
+CPUQuota=50%
+Nice=10
+
+# Безопасность
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=$WORKING_DIR/data
+ProtectHome=yes
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kanbe
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    else
+        sudo tee $SERVICE_FILE > /dev/null << EOF
 [Unit]
 Description=KanBe Kanban Application
 After=network.target
@@ -717,6 +765,7 @@ SyslogIdentifier=kanbe
 [Install]
 WantedBy=multi-user.target
 EOF
+    fi
 
     # Перезагрузка systemd и включение сервиса
     sudo systemctl daemon-reload

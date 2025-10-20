@@ -2,6 +2,15 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// Raspberry Pi optimizations
+try {
+  const { applyRaspberryPiOptimizations } = require('../raspberry-pi-config.js');
+  applyRaspberryPiOptimizations();
+} catch (error) {
+  // Not on Raspberry Pi or config file not found, continue normally
+  console.log('ℹ️  Raspberry Pi optimizations not applied (not needed or config missing)');
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

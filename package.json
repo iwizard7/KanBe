@@ -13,8 +13,12 @@
     "build:linux": "npm run build:linux:client && npm run build:linux:server",
     "build:linux:client": "vite build",
     "build:linux:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:better-sqlite3",
+    "build:raspberry-pi": "npm run build:raspberry-pi:client && npm run build:raspberry-pi:server",
+    "build:raspberry-pi:client": "NODE_OPTIONS='--max-old-space-size=512' vite build --mode production",
+    "build:raspberry-pi:server": "NODE_OPTIONS='--max-old-space-size=512' esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --external:better-sqlite3 --minify",
     "start": "NODE_ENV=production node dist/index.js",
     "start:pm2": "NODE_ENV=production pm2 start dist/index.js --name kanbe",
+    "start:raspberry-pi": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=256 --optimize-for-size' UV_THREADPOOL_SIZE=2 node dist/index.js",
     "start:systemd": "sudo systemctl start kanbe",
     "start:launchd": "launchctl start com.kanbe.app",
     "stop": "pm2 stop kanbe || sudo systemctl stop kanbe || launchctl stop com.kanbe.app || (pkill -f 'node dist/index.js' && echo 'Сервер остановлен')",
@@ -29,9 +33,14 @@
     "build:native": "npm rebuild better-sqlite3",
     "build:native:macos": "npm rebuild better-sqlite3 --build-from-source",
     "build:native:linux": "npm rebuild better-sqlite3",
+    "build:native:raspberry-pi": "NODE_OPTIONS='--max-old-space-size=256' npm rebuild better-sqlite3 --build-from-source",
     "setup": "chmod +x install-universal.sh && ./install-universal.sh",
     "setup:macos": "chmod +x install-macos.sh && ./install-macos.sh",
-    "setup:linux": "chmod +x install.sh && ./install.sh"
+    "setup:linux": "chmod +x install.sh && ./install.sh",
+    "setup:raspberry-pi": "chmod +x install.sh && ./install.sh",
+    "pi:config": "node raspberry-pi-config.js",
+    "pi:monitor": "node -e \"require('./raspberry-pi-config.js').startPerformanceMonitoring()\"",
+    "pi:info": "node -e \"console.log(require('./raspberry-pi-config.js').getSystemInfo())\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
