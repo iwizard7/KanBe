@@ -8,6 +8,7 @@ interface VirtualizedTaskListProps {
   allTasks?: Task[];
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
+  onDragStart?: (e: React.DragEvent, taskId: string) => void;
   height?: number;
   itemSize?: number;
 }
@@ -18,6 +19,7 @@ export const VirtualizedTaskList = React.memo<VirtualizedTaskListProps>(
     allTasks = [],
     onEdit,
     onDelete,
+    onDragStart,
     height = 400,
     itemSize = 180, // Approximate height of a task card
   }) {
@@ -32,6 +34,7 @@ export const VirtualizedTaskList = React.memo<VirtualizedTaskListProps>(
               allTasks={allTasks}
               onEdit={onEdit}
               onDelete={onDelete}
+              onDragStart={onDragStart}
             />
           ))}
         </div>
@@ -55,6 +58,7 @@ export const VirtualizedTaskList = React.memo<VirtualizedTaskListProps>(
                 allTasks={allTasks}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onDragStart={onDragStart}
               />
             </div>
           );

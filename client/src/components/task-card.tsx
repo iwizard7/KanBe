@@ -13,10 +13,11 @@ interface TaskCardProps {
   allTasks?: Task[];
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
+  onDragStart?: (e: React.DragEvent, taskId: string) => void;
   isDragging?: boolean;
 }
 
-export const TaskCard = React.memo<TaskCardProps>(function TaskCard({ task, allTasks = [], onEdit, onDelete, isDragging }) {
+export const TaskCard = React.memo<TaskCardProps>(function TaskCard({ task, allTasks = [], onEdit, onDelete, onDragStart, isDragging }) {
   // Parse tags from JSON string to array
   let tagsArray: string[] = [];
   try {
@@ -64,6 +65,8 @@ export const TaskCard = React.memo<TaskCardProps>(function TaskCard({ task, allT
         'border-l-green-500'
       }`}
       data-testid={`card-task-${task.id}`}
+      draggable="true"
+      onDragStart={(e) => onDragStart?.(e, task.id)}
     >
       {/* Header with drag handle, priority, and actions */}
       <div className="flex items-start justify-between gap-2">

@@ -93,10 +93,10 @@ export const KanbanColumn = React.memo<KanbanColumnProps>(function KanbanColumn(
               <Badge
                 key={priority.name}
                 variant="outline"
-                className={`text-xs px-2 py-0.5 ${priority.bg} border-current`}
+                className={`text-xs px-2 py-0.5 border-current`}
                 data-testid={`badge-priority-${priority.name}-${status}`}
               >
-                <div className={`w-1.5 h-1.5 rounded-full mr-1 ${priority.bg}`} />
+                <div className="w-1.5 h-1.5 rounded-full mr-1 bg-current" />
                 {priority.label}: {count}
               </Badge>
             );
@@ -133,6 +133,7 @@ export const KanbanColumn = React.memo<KanbanColumnProps>(function KanbanColumn(
             allTasks={allTasks}
             onEdit={onEditTask}
             onDelete={onDeleteTask}
+            onDragStart={handleDragStart}
             height={400}
           />
         )}
