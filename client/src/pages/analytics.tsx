@@ -122,7 +122,10 @@ export default function Analytics() {
     tasksByPriority: PRIORITY_LEVELS.map(priority => ({
       name: priority.label,
       value: tasks.filter(t => t.priority === priority.name).length,
-      color: priority.color.replace('text-', '').replace('-600', ''),
+      color: priority.name === 'low' ? '#10B981' :
+             priority.name === 'medium' ? '#F59E0B' :
+             priority.name === 'high' ? '#F97316' :
+             '#EF4444', // urgent
     })),
     completionTrend: (() => {
       const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
