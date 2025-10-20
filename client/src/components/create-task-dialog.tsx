@@ -79,7 +79,7 @@ export function CreateTaskDialog({
     enabled: open, // Only fetch when dialog is open
   });
 
-  const existingTasks = tasksResponse?.tasks || [];
+  const existingTasks = Array.isArray(tasksResponse?.tasks) ? tasksResponse.tasks : [];
 
   // Fetch existing tags for suggestions
   const { data: existingTags = [] } = useQuery({
