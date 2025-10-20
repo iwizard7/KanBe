@@ -1,5 +1,5 @@
 import React from "react";
-import { FixedSizeList as List } from "react-window";
+import { List } from "react-window";
 import { TaskCard } from "./task-card";
 import type { Task } from "@shared/schema";
 
@@ -38,21 +38,6 @@ export const VirtualizedTaskList = React.memo<VirtualizedTaskListProps>(
       );
     }
 
-    // Render function for each item
-    const TaskItem = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-      const task = tasks[index];
-      return (
-        <div style={style} className="pr-1">
-          <TaskCard
-            task={task}
-            allTasks={allTasks}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        </div>
-      );
-    };
-
     return (
       <List
         height={height}
@@ -60,7 +45,20 @@ export const VirtualizedTaskList = React.memo<VirtualizedTaskListProps>(
         itemSize={itemSize}
         className="scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
       >
-        {TaskItem}
+        {/* @ts-ignore */}
+        {({ index, style }: any) => {
+          const task = tasks[index];
+          return (
+            <div style={style} className="pr-1">
+              <TaskCard
+                task={task}
+                allTasks={allTasks}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            </div>
+          );
+        }}
       </List>
     );
   }
