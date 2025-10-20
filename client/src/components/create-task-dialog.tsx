@@ -64,10 +64,22 @@ export function CreateTaskDialog({
   const [dependencies, setDependencies] = useState<string[]>([]);
 
   // Fetch existing tasks for dependencies
-  const { data: existingTasks = [] } = useQuery<Task[]>({
-    queryKey: ['/api/tasks'],
+  const { data: tasksResponse } = useQuery<{
+    tasks: Task[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  }>({
+    queryKey: ['/api/tasks', { page: 1, limit: 1000 }],
     enabled: open, // Only fetch when dialog is open
   });
+
+  const existingTasks = tasksResponse?.tasks || [];
 
   // Fetch existing tags for suggestions
   const { data: existingTags = [] } = useQuery({
@@ -183,7 +195,12 @@ export function CreateTaskDialog({
                 {PRIORITY_LEVELS.map((level) => (
                   <SelectItem key={level.name} value={level.name} data-testid={`priority-${level.name}`}>
                     <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${level.bg}`} />
+                      <div className={`w-2 h-2 rounded-full ${
+                        level.name === 'urgent' ? 'bg-red-500' :
+                        level.name === 'high' ? 'bg-orange-500' :
+                        level.name === 'medium' ? 'bg-yellow-500' :
+                        'bg-green-500'
+                      }`} />
                       {level.label}
                     </div>
                   </SelectItem>
