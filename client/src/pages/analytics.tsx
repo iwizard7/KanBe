@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/navbar";
 import { Card } from "@/components/ui/card";
@@ -35,9 +35,10 @@ import {
   CalendarDays
 } from "lucide-react";
 import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isAfter, isBefore } from "date-fns";
-import { ru } from "date-fns/locale";
+import { ru } from "date-fns/locale/ru";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import type { Task } from "@shared/schema";
 import { PRIORITY_LEVELS } from "@shared/schema";
 import { Loader2 } from "lucide-react";
@@ -57,8 +58,16 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 export default function Analytics() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [timeRange, setTimeRange] = useState<string>("7d");
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (user === null) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
 
   // Fetch tasks
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
