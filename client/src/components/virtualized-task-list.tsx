@@ -1,5 +1,5 @@
 import React from "react";
-import { FixedSizeList } from "react-window";
+import { FixedSizeList as List } from "react-window";
 import { TaskCard } from "./task-card";
 import type { Task } from "@shared/schema";
 
@@ -54,14 +54,14 @@ export const VirtualizedTaskList = React.memo<VirtualizedTaskListProps>(
     };
 
     return (
-      <FixedSizeList
+      <List
         height={height}
         itemCount={tasks.length}
         itemSize={itemSize}
         className="scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
       >
         {TaskItem}
-      </FixedSizeList>
+      </List>
     );
   }
 );

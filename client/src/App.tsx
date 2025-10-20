@@ -28,9 +28,9 @@ function Router() {
     <Switch>
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
-      {isAuthenticated && <Route path="/board" component={Board} />}
-      {isAuthenticated && <Route path="/analytics" component={Analytics} />}
-      {isAuthenticated && <Route path="/profile" component={Profile} />}
+      <Route path="/board" component={Board} />
+      <Route path="/analytics" component={Analytics} />
+      <Route path="/profile" component={Profile} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navbar } from "@/components/navbar";
 import { KanbanColumn } from "@/components/kanban-column";
@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import type { Task, PriorityLevel } from "@shared/schema";
 import { Loader2 } from "lucide-react";
 
@@ -32,10 +33,18 @@ const COLUMNS = [
 export default function Board() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [defaultStatus, setDefaultStatus] = useState<string>('todo');
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (user === null) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
 
   // Fetch tasks with pagination and improved caching
   const { data: tasksResponse, isLoading } = useQuery<{

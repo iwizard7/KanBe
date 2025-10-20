@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 
 export default function Login() {
@@ -28,12 +28,14 @@ export default function Login() {
       // Небольшая задержка для установки сессии
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Проверяем аутентификацию перед редиректом
+      // Получаем данные пользователя и обновляем кеш
       try {
-        await apiRequest("GET", "/api/auth/user");
+        const user = await apiRequest("GET", "/api/auth/user");
+        queryClient.setQueryData(["/api/auth/user"], user);
         navigate("/board");
       } catch {
-        // Если проверка не удалась, все равно пробуем перейти
+        // Если не удалось получить пользователя, инвалидируем кеш и пробуем перейти
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         navigate("/board");
       }
     } catch (error: any) {

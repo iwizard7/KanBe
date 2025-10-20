@@ -14,7 +14,7 @@ import type { User as UserType } from "@shared/schema";
 import logo from "@/assets/logo.png";
 
 interface NavbarProps {
-  user?: UserType;
+  user?: UserType | null;
 }
 
 export function Navbar({ user }: NavbarProps) {
