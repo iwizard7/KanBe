@@ -57,23 +57,23 @@ interface AnalyticsData {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 export default function Analytics() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [timeRange, setTimeRange] = useState<string>("7d");
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (user === null) {
-      navigate("/login");
-    }
-  }, [user, navigate]);
 
   // Fetch tasks
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ['/api/tasks'],
     enabled: !!user,
   });
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/login");
+    }
+  }, [user, authLoading, navigate]);
 
   // Calculate analytics data
   const analyticsData: AnalyticsData = {
