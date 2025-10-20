@@ -43,9 +43,10 @@ import { useToast } from "@/hooks/use-toast";
 import type { Task } from "@shared/schema";
 import { PRIORITY_LEVELS } from "@shared/schema";
 import { Loader2 } from "lucide-react";
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 interface AnalyticsData {
   totalTasks: number;
@@ -187,51 +188,44 @@ export default function Analytics() {
 
   const handleExportPDF = async () => {
     try {
-      const pdf = new jsPDF();
-      let yPosition = 20;
+      const { default: html2canvas } = await import('html2canvas');
 
-      // Title
-      pdf.setFontSize(20);
-      pdf.text('Аналитика и отчеты', 20, yPosition);
-      yPosition += 20;
+      const docDefinition: any = {
+        content: [
+          { text: 'Аналитика и отчеты', style: 'header' },
+          { text: `Отчет на ${format(new Date(), 'dd.MM.yyyy', { locale: ru })}`, style: 'subheader' },
+          { text: 'Ключевые метрики:', style: 'sectionHeader' },
+          {
+            ul: [
+              `Всего задач: ${analyticsData.totalTasks}`,
+              `Выполнено: ${analyticsData.completedTasks}`,
+              `Просрочено: ${analyticsData.overdueTasks}`,
+              `Продуктивность: ${analyticsData.productivityScore}%`,
+            ]
+          },
+        ],
+        styles: {
+          header: { fontSize: 20, bold: true, margin: [0, 0, 10, 0] },
+          subheader: { fontSize: 12, margin: [0, 0, 20, 0] },
+          sectionHeader: { fontSize: 16, bold: true, margin: [0, 0, 10, 0] },
+        }
+      };
 
-      // Date
-      pdf.setFontSize(12);
-      pdf.text(`Отчет на ${format(new Date(), 'dd.MM.yyyy', { locale: ru })}`, 20, yPosition);
-      yPosition += 20;
-
-      // Key Metrics
-      pdf.setFontSize(16);
-      pdf.text('Ключевые метрики:', 20, yPosition);
-      yPosition += 15;
-
-      pdf.setFontSize(12);
-      pdf.text(`Всего задач: ${analyticsData.totalTasks}`, 20, yPosition);
-      yPosition += 10;
-      pdf.text(`Выполнено: ${analyticsData.completedTasks}`, 20, yPosition);
-      yPosition += 10;
-      pdf.text(`Просрочено: ${analyticsData.overdueTasks}`, 20, yPosition);
-      yPosition += 10;
-      pdf.text(`Продуктивность: ${analyticsData.productivityScore}%`, 20, yPosition);
-      yPosition += 20;
-
-      // Charts - capture and add as images
+      // Add charts as images
       const charts = document.querySelectorAll('.recharts-wrapper');
       for (let i = 0; i < charts.length && i < 3; i++) {
         const chart = charts[i] as HTMLElement;
         const canvas = await html2canvas(chart);
         const imgData = canvas.toDataURL('image/png');
 
-        if (yPosition + 100 > 280) {
-          pdf.addPage();
-          yPosition = 20;
-        }
-
-        pdf.addImage(imgData, 'PNG', 20, yPosition, 170, 80);
-        yPosition += 90;
+        docDefinition.content.push({
+          image: imgData,
+          width: 500,
+          margin: [0, 20, 0, 0]
+        });
       }
 
-      pdf.save(`analytics-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      pdfMake.createPdf(docDefinition).download(`analytics-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     } catch (error) {
       console.error('Error exporting PDF:', error);
       toast({
