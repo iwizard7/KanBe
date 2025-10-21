@@ -198,7 +198,54 @@ install_nodejs() {
                     fi
                 fi
 
-                # Попытка 3: Через snap (если доступен)
+                # Попытка 3: Через Node Version Manager (nvm)
+                if [ "$node_installed" = false ]; then
+                    print_info "Пробуем установить через Node Version Manager (nvm)..."
+
+                    # Установка nvm без sudo
+                    if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash 2>/dev/null; then
+                        print_info "NVM установлен, загружаем в сессию..."
+
+                        # Загружаем nvm в текущую сессию
+                        export NVM_DIR="$HOME/.nvm"
+                        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+                        # Установка Node.js через nvm
+                        if command -v nvm &> /dev/null; then
+                            print_info "Установка Node.js 18 через nvm..."
+                            if nvm install 18 2>/dev/null && nvm use 18 2>/dev/null; then
+                                # Создаем символические ссылки в /usr/local/bin для совместимости
+                                sudo ln -sf "$NVM_DIR/versions/node/$(nvm current)/bin/node" /usr/local/bin/node 2>/dev/null || true
+                                sudo ln -sf "$NVM_DIR/versions/node/$(nvm current)/bin/npm" /usr/local/bin/npm 2>/dev/null || true
+                                sudo ln -sf "$NVM_DIR/versions/node/$(nvm current)/bin/npx" /usr/local/bin/npx 2>/dev/null || true
+
+                                if command -v node &> /dev/null; then
+                                    node_installed=true
+                                    print_success "Node.js установлен через nvm"
+
+                                    # Добавляем nvm в .bashrc для будущих сессий
+                                    if ! grep -q "NVM_DIR" ~/.bashrc 2>/dev/null; then
+                                        echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc
+                                        echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.bashrc
+                                        echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >> ~/.bashrc
+                                        print_info "NVM добавлен в .bashrc"
+                                    fi
+                                else
+                                    print_warning "NVM установка не создала правильные ссылки"
+                                fi
+                            else
+                                print_warning "Не удалось установить Node.js через nvm"
+                            fi
+                        else
+                            print_warning "NVM не загружен в сессию"
+                        fi
+                    else
+                        print_warning "Не удалось установить nvm"
+                    fi
+                fi
+
+                # Попытка 4: Через snap (если доступен)
                 if [ "$node_installed" = false ]; then
                     print_info "Пробуем установить через snap..."
 
