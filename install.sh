@@ -120,7 +120,8 @@ install_nodejs() {
                     else
                         print_warning "Node.js $NODE_VERSION требует обновления npm (текущий: $NPM_VERSION)"
                         print_info "Будет выполнено обновление npm"
-                        npm install -g npm@latest
+                        # Используем sudo для глобального обновления npm
+                        sudo npm install -g npm@latest 2>/dev/null || npm install -g npm@latest 2>/dev/null
                         print_success "NPM обновлен: $(npm --version)"
                         return 0
                     fi
@@ -166,6 +167,18 @@ install_nodejs() {
                 # Попытка 1: Через системные репозитории
                 print_info "Попытка установки через системные репозитории..."
 
+                # Проверка и восстановление dpkg перед установкой Node.js
+                if ! dpkg --audit >/dev/null 2>&1; then
+                    print_warning "dpkg поврежден, попытка восстановления..."
+                    sudo dpkg --configure -a 2>/dev/null || print_warning "Не удалось автоматически восстановить dpkg"
+                    sudo apt-get install --reinstall dpkg 2>/dev/null || print_warning "Не удалось переустановить dpkg"
+                    # Попытка очистки поврежденных пакетов
+                    sudo apt-get clean 2>/dev/null || true
+                    sudo apt-get autoclean 2>/dev/null || true
+                    # Попытка исправления зависимостей
+                    sudo apt-get -f install 2>/dev/null || print_warning "Не удалось исправить зависимости"
+                fi
+
                 # Попытка установки nodejs из системных репозиториев
                 if timeout 600 sudo apt-get install -y nodejs npm 2>/dev/null; then
                     node_installed=true
@@ -177,13 +190,6 @@ install_nodejs() {
                 # Попытка 2: Через официальный репозиторий Debian/Ubuntu
                 if [ "$node_installed" = false ]; then
                     print_info "Пробуем установить через официальный репозиторий Debian..."
-
-                    # Проверка и восстановление dpkg перед установкой
-                    if ! dpkg --audit >/dev/null 2>&1; then
-                        print_warning "dpkg поврежден, попытка восстановления..."
-                        sudo dpkg --configure -a 2>/dev/null || print_warning "Не удалось автоматически восстановить dpkg"
-                        sudo apt-get install --reinstall dpkg 2>/dev/null || print_warning "Не удалось переустановить dpkg"
-                    fi
 
                     # Обновление пакетов
                     print_info "Обновление списка пакетов..."
@@ -225,10 +231,10 @@ install_nodejs() {
                         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
                         [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
-                        # Установка Node.js через nvm
+                        # Установка Node.js через nvm (используем Node.js 20 для лучшей совместимости)
                         if command -v nvm &> /dev/null; then
-                            print_info "Установка Node.js 18 через nvm..."
-                            if nvm install 18 2>/dev/null && nvm use 18 2>/dev/null; then
+                            print_info "Установка Node.js 20 через nvm..."
+                            if nvm install 20 2>/dev/null && nvm use 20 2>/dev/null; then
                                 # Создаем символические ссылки в /usr/local/bin для совместимости
                                 sudo ln -sf "$NVM_DIR/versions/node/$(nvm current)/bin/node" /usr/local/bin/node 2>/dev/null || true
                                 sudo ln -sf "$NVM_DIR/versions/node/$(nvm current)/bin/npm" /usr/local/bin/npm 2>/dev/null || true
@@ -265,7 +271,7 @@ install_nodejs() {
 
                     if command -v snap &> /dev/null; then
                         print_info "Установка Node.js через snap..."
-                        if sudo snap install node --classic 2>/dev/null; then
+                        if sudo snap install node --classic --channel=20/stable 2>/dev/null; then
                             # Snap создает ссылки в /snap/bin
                             sudo ln -sf /snap/bin/node /usr/local/bin/node 2>/dev/null || true
                             sudo ln -sf /snap/bin/npm /usr/local/bin/npm 2>/dev/null || true
@@ -285,7 +291,7 @@ install_nodejs() {
                     fi
                 fi
 
-                # Попытка 4: Ручная загрузка и установка
+                # Попытка 5: Ручная загрузка и установка
                 if [ "$node_installed" = false ]; then
                     print_info "Пробуем ручную загрузку Node.js..."
 
@@ -297,7 +303,7 @@ install_nodejs() {
                         arch="armv7l"
                     fi
 
-                    local node_url="https://nodejs.org/dist/v18.20.8/node-v18.20.8-linux-${arch}.tar.xz"
+                    local node_url="https://nodejs.org/dist/v20.19.2/node-v20.19.2-linux-${arch}.tar.xz"
 
                     print_info "Загрузка Node.js с ${node_url}..."
                     if curl -L -o node.tar.xz "$node_url" 2>/dev/null && [ -f node.tar.xz ]; then
@@ -389,7 +395,7 @@ install_dependencies() {
                 print_info "Установка зависимостей для Raspberry Pi (оптимизировано для ARMv7)..."
                 # Оптимизации для Raspberry Pi - агрессивная настройка памяти и производительности
                 unset NODE_OPTIONS
-                export NODE_OPTIONS="--max-old-space-size=512"
+                export NODE_OPTIONS="--max-old-space-size=1024"
                 print_info "NODE_OPTIONS установлены: $NODE_OPTIONS"
 
                 # Используем локальную директорию для кэша вместо /tmp, чтобы избежать переполнения RAM
@@ -401,7 +407,7 @@ install_dependencies() {
                 # Специальные настройки для Raspberry Pi - пошаговая установка для избежания зависаний
                 # Сначала устанавливаем только основные зависимости без devDependencies
                 print_info "Шаг 1: Установка основных зависимостей..."
-                if ! npm install --no-audit --no-fund --timeout=600000 --legacy-peer-deps --production --prefer-offline --no-optional --no-package-lock --verbose --no-bin-links --ignore-scripts --jobs=2; then
+                if ! npm install --no-audit --no-fund --timeout=900000 --legacy-peer-deps --production --prefer-offline --no-optional --no-package-lock --verbose --no-bin-links --ignore-scripts --jobs=2; then
                     print_warning "Не удалось установить основные зависимости, пробуем альтернативный подход..."
                     # Альтернативный подход: установка по одной зависимости
                     npm install --save express@^4.21.2 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "express не установлен"
@@ -412,7 +418,7 @@ install_dependencies() {
 
                 # Затем устанавливаем devDependencies отдельно
                 print_info "Шаг 2: Установка devDependencies..."
-                npm install --only=dev --no-audit --no-fund --timeout=600000 --legacy-peer-deps --no-package-lock --verbose --no-bin-links --ignore-scripts --jobs=1 || print_warning "devDependencies установлены частично"
+                npm install --only=dev --no-audit --no-fund --timeout=900000 --legacy-peer-deps --no-package-lock --verbose --no-bin-links --ignore-scripts --jobs=1 || print_warning "devDependencies установлены частично"
 
                 # Финальная проверка и дозаполнение
                 npm_command="npm install --no-audit --no-fund --timeout=300000 --legacy-peer-deps --no-package-lock --verbose --no-bin-links --ignore-scripts --jobs=1"
@@ -433,11 +439,11 @@ install_dependencies() {
                 # Проверяем наличие основных пакетов
                 if [ ! -f "node_modules/.bin/drizzle-kit" ]; then
                     print_warning "drizzle-kit не найден, пробуем установить отдельно..."
-                    npm install drizzle-kit --save-dev --timeout=60000 || print_warning "Не удалось установить drizzle-kit отдельно"
+                    npm install drizzle-kit --save-dev --timeout=60000 --legacy-peer-deps --no-package-lock || print_warning "Не удалось установить drizzle-kit отдельно"
                 fi
                 if [ ! -f "node_modules/.bin/tsx" ]; then
                     print_warning "tsx не найден, пробуем установить отдельно..."
-                    npm install tsx --save-dev --timeout=60000 || print_warning "Не удалось установить tsx отдельно"
+                    npm install tsx --save-dev --timeout=60000 --legacy-peer-deps --no-package-lock || print_warning "Не удалось установить tsx отдельно"
                 fi
                 # Проверяем еще раз
                 if [ -f "node_modules/.bin/drizzle-kit" ] && [ -f "node_modules/.bin/tsx" ]; then
@@ -1257,6 +1263,9 @@ main() {
             if ! dpkg --audit >/dev/null 2>&1; then
                 print_warning "dpkg поврежден, попытка восстановления перед созданием сервиса..."
                 sudo dpkg --configure -a 2>/dev/null || print_warning "Не удалось восстановить dpkg"
+                sudo apt-get clean 2>/dev/null || true
+                sudo apt-get autoclean 2>/dev/null || true
+                sudo apt-get -f install 2>/dev/null || print_warning "Не удалось исправить зависимости"
             fi
             create_systemd_service
             ;;
