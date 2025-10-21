@@ -137,35 +137,22 @@ install_nodejs() {
                 print_info "Установка Node.js через apt..."
 
                 # Попытка 1: Через nodesource репозиторий
-                local max_attempts=3
-                local attempt=1
-                local node_installed=false
+                print_info "Попытка установки через nodesource репозиторий..."
 
-                while [ $attempt -le $max_attempts ] && [ "$node_installed" = false ]; do
-                    print_info "Попытка $attempt из $max_attempts..."
+                # Настройка репозитория nodesource
+                if curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - 2>/dev/null; then
+                    print_info "Репозиторий nodesource настроен"
 
-                    # Настройка репозитория nodesource
-                    if curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - 2>/dev/null; then
-                        print_info "Репозиторий nodesource настроен"
-
-                        # Попытка установки с таймаутом
-                        if timeout 300 sudo apt-get install -y nodejs 2>/dev/null; then
-                            node_installed=true
-                            print_success "Node.js установлен через nodesource"
-                            break
-                        else
-                            print_warning "Установка через nodesource не удалась (попытка $attempt)"
-                        fi
+                    # Попытка установки с таймаутом
+                    if timeout 300 sudo apt-get install -y nodejs 2>/dev/null; then
+                        node_installed=true
+                        print_success "Node.js установлен через nodesource"
                     else
-                        print_warning "Не удалось настроить репозиторий nodesource (попытка $attempt)"
+                        print_warning "Установка через nodesource не удалась"
                     fi
-
-                    if [ $attempt -lt $max_attempts ]; then
-                        print_info "Повторная попытка через 5 секунд..."
-                        sleep 5
-                    fi
-                    ((attempt++))
-                done
+                else
+                    print_warning "Не удалось настроить репозиторий nodesource"
+                fi
 
                 # Попытка 2: Через официальный репозиторий Debian/Ubuntu
                 if [ "$node_installed" = false ]; then
@@ -404,31 +391,18 @@ setup_database() {
         return 1
     fi
 
-    # Применение миграций с повторными попытками
+    # Применение миграций
     if command -v npm &> /dev/null; then
         print_info "Применение миграций базы данных..."
-        local max_attempts=3
-        local attempt=1
 
-        while [ $attempt -le $max_attempts ]; do
-            print_info "Попытка $attempt из $max_attempts..."
-
-            if npm run db:push 2>&1; then
-                print_success "База данных настроена успешно"
-                return 0
-            else
-                print_warning "Попытка $attempt не удалась"
-                if [ $attempt -lt $max_attempts ]; then
-                    print_info "Повторная попытка через 3 секунды..."
-                    sleep 3
-                fi
-            fi
-            ((attempt++))
-        done
-
-        print_error "Не удалось настроить базу данных после $max_attempts попыток"
-        print_info "Попробуйте выполнить 'npm run db:push' вручную"
-        return 1
+        if npm run db:push 2>&1; then
+            print_success "База данных настроена успешно"
+            return 0
+        else
+            print_error "Не удалось настроить базу данных"
+            print_info "Попробуйте выполнить 'npm run db:push' вручную"
+            return 1
+        fi
     else
         print_warning "NPM не найден, пропуск настройки базы данных"
         return 1
