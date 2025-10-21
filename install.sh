@@ -106,9 +106,19 @@ install_nodejs() {
         NODE_VERSION=$(node --version 2>/dev/null)
         NPM_VERSION=$(npm --version 2>/dev/null)
         if [[ -n "$NODE_VERSION" && -n "$NPM_VERSION" ]]; then
-            print_info "Node.js уже установлен: $NODE_VERSION"
-            return 0
+            # Проверяем версию Node.js (должна быть 18+)
+            NODE_MAJOR_VERSION=$(node --version | sed 's/v\([0-9]*\).*/\1/')
+            if [ "$NODE_MAJOR_VERSION" -ge 18 ]; then
+                print_success "Node.js уже установлен подходящей версии: $NODE_VERSION"
+                print_info "NPM версия: $NPM_VERSION"
+                return 0
+            else
+                print_warning "Найден Node.js версии $NODE_VERSION, требуется 18+"
+                print_info "Будет выполнена установка более новой версии"
+            fi
         fi
+    else
+        print_info "Node.js не найден, будет выполнена установка"
     fi
 
     case $PLATFORM in
