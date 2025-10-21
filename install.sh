@@ -132,12 +132,97 @@ install_nodejs() {
             fi
             ;;
         "linux"|"raspberry-pi")
-            # Установка Node.js на Linux
+            # Установка Node.js на Linux с повторными попытками
             if command -v apt-get &> /dev/null; then
                 print_info "Установка Node.js через apt..."
-                curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-                sudo apt-get install -y nodejs
-                print_success "Node.js установлен"
+
+                # Попытка 1: Через nodesource репозиторий
+                local max_attempts=3
+                local attempt=1
+                local node_installed=false
+
+                while [ $attempt -le $max_attempts ] && [ "$node_installed" = false ]; do
+                    print_info "Попытка $attempt из $max_attempts..."
+
+                    # Настройка репозитория nodesource
+                    if curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - 2>/dev/null; then
+                        print_info "Репозиторий nodesource настроен"
+
+                        # Попытка установки с таймаутом
+                        if timeout 300 sudo apt-get install -y nodejs 2>/dev/null; then
+                            node_installed=true
+                            print_success "Node.js установлен через nodesource"
+                            break
+                        else
+                            print_warning "Установка через nodesource не удалась (попытка $attempt)"
+                        fi
+                    else
+                        print_warning "Не удалось настроить репозиторий nodesource (попытка $attempt)"
+                    fi
+
+                    if [ $attempt -lt $max_attempts ]; then
+                        print_info "Повторная попытка через 5 секунд..."
+                        sleep 5
+                    fi
+                    ((attempt++))
+                done
+
+                # Попытка 2: Через официальный репозиторий Debian/Ubuntu
+                if [ "$node_installed" = false ]; then
+                    print_info "Пробуем установить через официальный репозиторий Debian..."
+
+                    # Обновление пакетов
+                    sudo apt-get update
+
+                    # Попытка установить nodejs из официального репозитория
+                    if sudo apt-get install -y nodejs npm 2>/dev/null; then
+                        node_installed=true
+                        print_success "Node.js установлен через официальный репозиторий"
+                    else
+                        print_warning "Установка через официальный репозиторий не удалась"
+                    fi
+                fi
+
+                # Попытка 3: Ручная загрузка и установка
+                if [ "$node_installed" = false ]; then
+                    print_info "Пробуем ручную загрузку Node.js..."
+
+                    # Определение архитектуры для загрузки
+                    local arch="x64"
+                    if [[ $(uname -m) == "aarch64" ]]; then
+                        arch="arm64"
+                    elif [[ $(uname -m) == "armv7l" ]]; then
+                        arch="armv7l"
+                    fi
+
+                    local node_url="https://nodejs.org/dist/v18.20.8/node-v18.20.8-linux-${arch}.tar.xz"
+
+                    if curl -L -o node.tar.xz "$node_url" 2>/dev/null && [ -f node.tar.xz ]; then
+                        print_info "Node.js загружен, распаковка..."
+                        sudo mkdir -p /usr/local/lib/nodejs
+                        sudo tar -xf node.tar.xz -C /usr/local/lib/nodejs --strip-components=1
+                        sudo ln -sf /usr/local/lib/nodejs/bin/node /usr/local/bin/node
+                        sudo ln -sf /usr/local/lib/nodejs/bin/npm /usr/local/bin/npm
+                        sudo ln -sf /usr/local/lib/nodejs/bin/npx /usr/local/bin/npx
+                        rm node.tar.xz
+
+                        if command -v node &> /dev/null; then
+                            node_installed=true
+                            print_success "Node.js установлен вручную"
+                        fi
+                    else
+                        print_warning "Ручная загрузка Node.js не удалась"
+                    fi
+                fi
+
+                if [ "$node_installed" = false ]; then
+                    print_error "Все методы установки Node.js не удались"
+                    print_info "Возможные решения:"
+                    print_info "1. Проверьте подключение к интернету"
+                    print_info "2. Попробуйте установить Node.js вручную: https://nodejs.org/"
+                    print_info "3. Используйте другой метод установки"
+                    exit 1
+                fi
             else
                 print_error "Не найден apt-get. Установите Node.js вручную"
                 exit 1
