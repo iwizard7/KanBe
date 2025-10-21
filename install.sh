@@ -366,8 +366,8 @@ install_dependencies() {
                 export npm_config_tmp="$PWD/.npm-tmp"
                 # Создаем директории для кэша если они не существуют
                 mkdir -p "$HOME/.npm-cache-kanbe" "$PWD/.npm-tmp"
-                # Специальные настройки для Raspberry Pi 3 - ускоренная установка
-                npm_command="npm install --no-audit --no-fund --timeout=1800000 --legacy-peer-deps --production=false --prefer-offline --no-optional --no-package-lock --verbose"
+                # Специальные настройки для Raspberry Pi 3 - максимально ускоренная установка
+                npm_command="npm install --no-audit --no-fund --timeout=1800000 --legacy-peer-deps --production=false --prefer-offline --no-optional --no-package-lock --verbose --no-bin-links --ignore-scripts"
                 ;;
             "linux")
                 npm_command="npm install --no-audit --no-fund --timeout=120000"
