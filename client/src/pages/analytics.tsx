@@ -695,7 +695,19 @@ export default function Analytics() {
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   className="rounded-md border"
+                  modifiers={{
+                    hasDeadline: tasks
+                      .filter(task => task.dueDate)
+                      .map(task => new Date(task.dueDate! * 1000))
+                  }}
+                  modifiersClassNames={{
+                    hasDeadline: "bg-red-100 text-red-900 font-semibold hover:bg-red-200 dark:bg-red-900 dark:text-red-100"
+                  }}
                 />
+                <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="w-3 h-3 bg-red-100 dark:bg-red-900 rounded"></div>
+                  <span>Дни с дедлайнами</span>
+                </div>
               </Card>
 
               <Card className="p-6 lg:col-span-2">
