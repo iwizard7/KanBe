@@ -148,13 +148,14 @@ app.use((req, res, next) => {
 
   server.listen({
     port,
-    host: "0.0.0.0",
+    host: isProduction ? "0.0.0.0" : "127.0.0.1", // Use 127.0.0.1 for development to avoid Safari localhost issues
     reusePort: true,
   }, () => {
     const isProduction = process.env.NODE_ENV === 'production';
     log(`serving on port ${port} (${isProduction ? 'production' : 'development'})`);
     if (!isProduction) {
-      log(`🌐 Try accessing: http://localhost:${port} or http://127.0.0.1:${port}`);
+      log(`🌐 Try accessing: http://127.0.0.1:${port} (Safari compatible)`);
+      log(`🌐 Alternative: http://localhost:${port}`);
     }
   });
 })();
