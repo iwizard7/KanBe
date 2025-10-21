@@ -117,7 +117,7 @@ install_dependencies_step_by_step() {
     print_step "Пошаговая установка зависимостей для Raspberry Pi..."
 
     # Настройка оптимизаций для Raspberry Pi
-    export NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size"
+    export NODE_OPTIONS="--max-old-space-size=512"
     export UV_THREADPOOL_SIZE=2
     export npm_config_cache="$HOME/.npm-cache-kanbe"
     export npm_config_tmp="$PWD/.npm-tmp"
@@ -189,7 +189,7 @@ install_dependencies_step_by_step() {
 build_native_modules_pi() {
     print_step "Сборка нативных модулей для Raspberry Pi..."
 
-    export NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size"
+    export NODE_OPTIONS="--max-old-space-size=512"
     export UV_THREADPOOL_SIZE=2
 
     print_info "Сборка better-sqlite3..."
@@ -249,7 +249,7 @@ EOF
 build_application_pi() {
     print_step "Сборка приложения для Raspberry Pi..."
 
-    export NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size"
+    export NODE_OPTIONS="--max-old-space-size=512"
 
     if npm run build:raspberry-pi; then
         print_success "Приложение собрано"
@@ -285,7 +285,7 @@ Environment=DATABASE_URL=$WORKING_DIR/data/kanbe.db
 Environment=SESSION_SECRET=$SESSION_SECRET
 
 # Raspberry Pi оптимизации
-Environment=NODE_OPTIONS=--max-old-space-size=256 --optimize-for-size
+Environment=NODE_OPTIONS=--max-old-space-size=256
 Environment=UV_THREADPOOL_SIZE=2
 Environment=SQLITE_BUSY_TIMEOUT=30000
 

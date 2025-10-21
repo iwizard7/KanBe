@@ -359,7 +359,7 @@ install_dependencies() {
                 print_info "Установка зависимостей для Raspberry Pi (оптимизировано для ARMv7)..."
                 # Оптимизации для Raspberry Pi - агрессивная настройка памяти и производительности
                 unset NODE_OPTIONS
-                export NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size"
+                export NODE_OPTIONS="--max-old-space-size=512"
                 print_info "NODE_OPTIONS установлены: $NODE_OPTIONS"
 
                 # Используем локальную директорию для кэша вместо /tmp, чтобы избежать переполнения RAM
@@ -454,7 +454,7 @@ build_native_modules() {
         "raspberry-pi")
             print_info "Сборка для Raspberry Pi (ARMv7)..."
             # Для Raspberry Pi используем build-from-source с оптимизациями
-            export NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size"
+            export NODE_OPTIONS="--max-old-space-size=512"
             export UV_THREADPOOL_SIZE=2
             npm rebuild better-sqlite3 --build-from-source --timeout=600000
             print_success "Нативные модули собраны для Raspberry Pi"
@@ -1019,7 +1019,7 @@ Environment=DATABASE_URL=$WORKING_DIR/data/kanbe.db
 Environment=SESSION_SECRET=$SESSION_SECRET
 
 # Raspberry Pi оптимизации
-Environment=NODE_OPTIONS=--max-old-space-size=256 --optimize-for-size
+Environment=NODE_OPTIONS=--max-old-space-size=256
 Environment=UV_THREADPOOL_SIZE=2
 Environment=SQLITE_BUSY_TIMEOUT=30000
 
