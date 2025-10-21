@@ -1,4 +1,4 @@
-# <img src="client/src/assets/logo.png" alt="KanBe Logo" width="150" height="150" />
+# <div align="center"><img src="client/src/assets/logo.png" alt="KanBe Logo" width="250" height="250" /></div>
 KanBe - Кроссплатформенная Канбан доска
 
 Современная Kanban-доска с полной поддержкой macOS (Apple Silicon), Linux и Raspberry Pi. **Оптимизирована для высокой производительности** даже на устройствах с ограниченными ресурсами.
