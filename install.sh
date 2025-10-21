@@ -141,8 +141,6 @@ install_nodejs() {
 
                 # Настройка репозитория nodesource
                 if curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - 2>/dev/null; then
-                    print_info "Репозиторий nodesource настроен"
-
                     # Попытка установки с таймаутом
                     if timeout 300 sudo apt-get install -y nodejs 2>/dev/null; then
                         node_installed=true
