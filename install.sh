@@ -515,16 +515,39 @@ select_installation_directory() {
     echo "=== Директория установки ==="
     echo "📁 Текущая директория: $(pwd)"
     echo ""
-    read -p "Установить KanBe в текущую директорию? (y/n): " USE_CURRENT_DIR
 
-    if [[ $USE_CURRENT_DIR =~ ^[Nn]$ ]]; then
+    # Запрос с y по умолчанию (просто Enter)
+    read -p "Установить KanBe в текущую директорию? (Y/n): " USE_CURRENT_DIR
+    USE_CURRENT_DIR=${USE_CURRENT_DIR:-y}  # По умолчанию y если пустой ввод
+
+    # Приводим к нижнему регистру и проверяем только y или n
+    USE_CURRENT_DIR=$(echo "$USE_CURRENT_DIR" | tr '[:upper:]' '[:lower:]')
+
+    while [[ "$USE_CURRENT_DIR" != "y" && "$USE_CURRENT_DIR" != "n" ]]; do
+        print_warning "Пожалуйста, введите только 'y' (да) или 'n' (нет)"
+        read -p "Установить KanBe в текущую директорию? (Y/n): " USE_CURRENT_DIR
+        USE_CURRENT_DIR=${USE_CURRENT_DIR:-y}
+        USE_CURRENT_DIR=$(echo "$USE_CURRENT_DIR" | tr '[:upper:]' '[:lower:]')
+    done
+
+    if [[ $USE_CURRENT_DIR == "n" ]]; then
         read -p "Введите путь для установки KanBe: " INSTALL_DIR
 
         # Проверка существования директории
         if [ ! -d "$INSTALL_DIR" ]; then
             echo "Директория $INSTALL_DIR не существует."
             read -p "Создать директорию? (y/n): " CREATE_DIR
-            if [[ $CREATE_DIR =~ ^[Yy]$ ]]; then
+            CREATE_DIR=${CREATE_DIR:-y}
+            CREATE_DIR=$(echo "$CREATE_DIR" | tr '[:upper:]' '[:lower:]')
+
+            while [[ "$CREATE_DIR" != "y" && "$CREATE_DIR" != "n" ]]; do
+                print_warning "Пожалуйста, введите только 'y' (да) или 'n' (нет)"
+                read -p "Создать директорию? (y/n): " CREATE_DIR
+                CREATE_DIR=${CREATE_DIR:-y}
+                CREATE_DIR=$(echo "$CREATE_DIR" | tr '[:upper:]' '[:lower:]')
+            done
+
+            if [[ $CREATE_DIR == "y" ]]; then
                 if ! mkdir -p "$INSTALL_DIR"; then
                     print_error "Ошибка создания директории $INSTALL_DIR"
                     exit 1
@@ -554,6 +577,17 @@ select_installation_directory() {
     fi
 }
 
+# Функция валидации email
+validate_email() {
+    local email=$1
+    # Простая регулярка для проверки email формата
+    if [[ $email =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Создание первого пользователя (только для single user установки)
 create_first_user() {
     # Пропускаем создание пользователя если не single user режим
@@ -566,14 +600,37 @@ create_first_user() {
 
     echo ""
     echo "=== Создание администратора ==="
-    read -p "Email для администратора: " ADMIN_EMAIL
-    read -s -p "Пароль для администратора: " ADMIN_PASSWORD
-    echo ""
 
-    if [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]; then
-        print_warning "Email и пароль обязательны для single user режима"
-        return 1
-    fi
+    # Запрос email с валидацией
+    while true; do
+        read -p "Email для администратора: " ADMIN_EMAIL
+        if [ -z "$ADMIN_EMAIL" ]; then
+            print_error "Email не может быть пустым"
+            continue
+        fi
+        if validate_email "$ADMIN_EMAIL"; then
+            break
+        else
+            print_error "Некорректный формат email. Пример: admin@example.com"
+        fi
+    done
+
+    # Запрос пароля
+    while true; do
+        read -s -p "Пароль для администратора: " ADMIN_PASSWORD
+        echo ""
+        if [ -z "$ADMIN_PASSWORD" ]; then
+            print_error "Пароль не может быть пустым"
+            continue
+        fi
+        if [ ${#ADMIN_PASSWORD} -lt 6 ]; then
+            print_error "Пароль должен содержать минимум 6 символов"
+            continue
+        fi
+        break
+    done
+
+    print_success "Email и пароль приняты"
 
     # Проверяем, что база данных существует и таблицы созданы
     if [ ! -f "data/kanbe.db" ]; then
