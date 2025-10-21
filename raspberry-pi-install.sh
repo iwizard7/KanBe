@@ -127,54 +127,115 @@ install_dependencies_step_by_step() {
     print_info "NODE_OPTIONS: $NODE_OPTIONS"
     print_info "UV_THREADPOOL_SIZE: $UV_THREADPOOL_SIZE"
 
-    # Шаг 1: Установка основных runtime зависимостей
-    print_info "Шаг 1/4: Установка основных зависимостей..."
-    npm install --save \
-        express@^4.21.2 \
-        better-sqlite3@^12.4.1 \
-        drizzle-orm@^0.39.1 \
-        bcrypt@^5.1.1 \
-        ws@^8.18.0 \
-        --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || {
-        print_warning "Частичная установка основных зависимостей"
-    }
+    # Шаг 1: Установка основных runtime зависимостей по одной
+    print_info "Шаг 1/4: Установка основных зависимостей по одной..."
 
-    # Шаг 2: Установка React и связанных пакетов
-    print_info "Шаг 2/4: Установка React зависимостей..."
-    npm install --save \
-        react@^18.3.1 \
-        react-dom@^18.3.1 \
-        @tanstack/react-query@^5.60.5 \
-        wouter@^3.3.5 \
-        --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || {
-        print_warning "Частичная установка React зависимостей"
-    }
+    # Устанавливаем по одной зависимости с паузами
+    print_info "Установка express..."
+    npm install --save express@^4.21.2 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "express не установлен"
 
-    # Шаг 3: Установка UI библиотек (Radix UI)
-    print_info "Шаг 3/4: Установка UI компонентов..."
-    npm install --save \
-        @radix-ui/react-dialog@^1.1.7 \
-        @radix-ui/react-dropdown-menu@^2.1.7 \
-        lucide-react@^0.453.0 \
-        class-variance-authority@^0.7.1 \
-        clsx@^2.1.1 \
-        tailwind-merge@^2.6.0 \
-        --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || {
-        print_warning "Частичная установка UI компонентов"
-    }
+    sleep 2
 
-    # Шаг 4: Установка dev зависимостей
-    print_info "Шаг 4/4: Установка dev зависимостей..."
-    npm install --save-dev \
-        vite@^5.4.20 \
-        @vitejs/plugin-react@^4.7.0 \
-        typescript@^5.6.3 \
-        tsx@^4.20.5 \
-        drizzle-kit@^0.31.4 \
-        esbuild@^0.25.0 \
-        --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || {
-        print_warning "Частичная установка dev зависимостей"
-    }
+    print_info "Установка better-sqlite3..."
+    npm install --save better-sqlite3@^12.4.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || print_warning "better-sqlite3 не установлен"
+
+    sleep 2
+
+    print_info "Установка drizzle-orm..."
+    npm install --save drizzle-orm@^0.39.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "drizzle-orm не установлен"
+
+    sleep 2
+
+    print_info "Установка bcrypt..."
+    npm install --save bcrypt@^5.1.1 --timeout=180000 --legacy-peer-deps --no-package-lock --verbose || print_warning "bcrypt не установлен"
+
+    sleep 2
+
+    print_info "Установка ws..."
+    npm install --save ws@^8.18.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "ws не установлен"
+
+    # Шаг 2: Установка React и связанных пакетов по одной
+    print_info "Шаг 2/4: Установка React зависимостей по одной..."
+
+    print_info "Установка react..."
+    npm install --save react@^18.3.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "react не установлен"
+
+    sleep 2
+
+    print_info "Установка react-dom..."
+    npm install --save react-dom@^18.3.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "react-dom не установлен"
+
+    sleep 2
+
+    print_info "Установка @tanstack/react-query..."
+    npm install --save @tanstack/react-query@^5.60.5 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "@tanstack/react-query не установлен"
+
+    sleep 2
+
+    print_info "Установка wouter..."
+    npm install --save wouter@^3.3.5 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "wouter не установлен"
+
+    # Шаг 3: Установка UI библиотек (Radix UI) по одной
+    print_info "Шаг 3/4: Установка UI компонентов по одной..."
+
+    print_info "Установка @radix-ui/react-dialog..."
+    npm install --save @radix-ui/react-dialog@^1.1.7 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "@radix-ui/react-dialog не установлен"
+
+    sleep 2
+
+    print_info "Установка @radix-ui/react-dropdown-menu..."
+    npm install --save @radix-ui/react-dropdown-menu@^2.1.7 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "@radix-ui/react-dropdown-menu не установлен"
+
+    sleep 2
+
+    print_info "Установка lucide-react..."
+    npm install --save lucide-react@^0.453.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "lucide-react не установлен"
+
+    sleep 2
+
+    print_info "Установка class-variance-authority..."
+    npm install --save class-variance-authority@^0.7.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "class-variance-authority не установлен"
+
+    sleep 2
+
+    print_info "Установка clsx..."
+    npm install --save clsx@^2.1.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "clsx не установлен"
+
+    sleep 2
+
+    print_info "Установка tailwind-merge..."
+    npm install --save tailwind-merge@^2.6.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "tailwind-merge не установлен"
+
+    # Шаг 4: Установка dev зависимостей по одной
+    print_info "Шаг 4/4: Установка dev зависимостей по одной..."
+
+    print_info "Установка vite..."
+    npm install --save-dev vite@^5.4.20 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "vite не установлен"
+
+    sleep 2
+
+    print_info "Установка @vitejs/plugin-react..."
+    npm install --save-dev @vitejs/plugin-react@^4.7.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "@vitejs/plugin-react не установлен"
+
+    sleep 2
+
+    print_info "Установка typescript..."
+    npm install --save-dev typescript@^5.6.3 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "typescript не установлен"
+
+    sleep 2
+
+    print_info "Установка tsx..."
+    npm install --save-dev tsx@^4.20.5 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "tsx не установлен"
+
+    sleep 2
+
+    print_info "Установка drizzle-kit..."
+    npm install --save-dev drizzle-kit@^0.31.4 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "drizzle-kit не установлен"
+
+    sleep 2
+
+    print_info "Установка esbuild..."
+    npm install --save-dev esbuild@^0.25.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "esbuild не установлен"
 
     # Финальная проверка
     print_info "Проверка установки..."
