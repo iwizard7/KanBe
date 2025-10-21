@@ -357,14 +357,17 @@ install_dependencies() {
                 ;;
             "raspberry-pi")
                 print_info "Установка зависимостей для Raspberry Pi (оптимизировано для ARMv7)..."
-                # Оптимизации для Raspberry Pi 3 - увеличенная память (только поддерживаемые параметры)
-                export NODE_OPTIONS="--max-old-space-size=512"
+                # Оптимизации для Raspberry Pi 3 - правильная настройка памяти
+                unset NODE_OPTIONS
+                export NODE_OPTIONS="--max-old-space-size=1024"
+                print_info "NODE_OPTIONS установлены: $NODE_OPTIONS"
                 # Используем локальную директорию для кэша вместо /tmp, чтобы избежать переполнения RAM
                 export npm_config_cache="$HOME/.npm-cache-kanbe"
                 export npm_config_tmp="$PWD/.npm-tmp"
                 # Создаем директории для кэша если они не существуют
                 mkdir -p "$HOME/.npm-cache-kanbe" "$PWD/.npm-tmp"
-                npm_command="npm install --no-audit --no-fund --timeout=600000 --legacy-peer-deps --production=false --prefer-offline --no-optional"
+                # Специальные настройки для Raspberry Pi 3
+                npm_command="npm install --no-audit --no-fund --timeout=900000 --legacy-peer-deps --production=false --prefer-offline --no-optional --no-package-lock"
                 ;;
             "linux")
                 npm_command="npm install --no-audit --no-fund --timeout=120000"
