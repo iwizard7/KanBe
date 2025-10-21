@@ -73,12 +73,21 @@ app.use('/uploads', express.static('uploads'));
 
 // Content Security Policy
 app.use((req, res, next) => {
-  // Less restrictive CSP for development, more restrictive for production
-  const csp = isProduction
-    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' ws: wss: http: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;"
-    : "default-src 'self' http://localhost:3000 http://127.0.0.1:3000; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https:; connect-src 'self' ws: wss: http: https:; object-src 'none'; base-uri 'self'; form-action 'self';";
-
-  res.setHeader('Content-Security-Policy', csp);
+  if (isProduction) {
+    // Strict CSP for production
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' ws: wss: http: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;"
+    );
+  } else {
+    // Very permissive CSP for development to avoid Safari issues
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; font-src *; connect-src *; object-src 'none'; base-uri 'self'; form-action *;"
+    );
+    // Explicitly prevent upgrade to HTTPS in development
+    res.setHeader('Upgrade-Insecure-Requests', '0');
+  }
   next();
 });
 
