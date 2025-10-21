@@ -150,7 +150,7 @@ install_nodejs() {
                 print_info "Попытка установки через системные репозитории..."
 
                 # Попытка установки nodejs из системных репозиториев
-                if timeout 300 sudo apt-get install -y nodejs npm 2>/dev/null; then
+                if timeout 600 sudo apt-get install -y nodejs npm 2>/dev/null; then
                     node_installed=true
                     print_success "Node.js установлен через системные репозитории"
                 else
@@ -331,30 +331,74 @@ install_dependencies() {
         exit 1
     fi
 
-    # Установка зависимостей с оптимизацией для платформы
-    case $PLATFORM in
-        "macos")
-            print_info "Установка зависимостей для macOS..."
-            if [ "$CPU_ARCH" = "arm64" ]; then
-                print_info "Оптимизация для Apple Silicon (ARM64)..."
-                npm install --no-audit --no-fund --timeout=60000
-            else
-                npm install --no-audit --no-fund --timeout=60000
-            fi
-            ;;
-        "raspberry-pi")
-            print_info "Установка зависимостей для Raspberry Pi (оптимизировано для ARMv7)..."
-            # Оптимизации для Raspberry Pi 3
-            export NODE_OPTIONS="--max-old-space-size=256"  # Ограничение памяти до 256MB
-            npm install --no-audit --no-fund --timeout=120000 --legacy-peer-deps --production=false
-            ;;
-        "linux")
-            print_info "Установка зависимостей для Linux..."
-            npm install --no-audit --no-fund --timeout=60000
-            ;;
-    esac
+    # Установка зависимостей с оптимизацией для платформы и повторными попытками
+    local max_attempts=3
+    local attempt=1
 
-    print_success "Зависимости установлены"
+    while [ $attempt -le $max_attempts ]; do
+        print_info "Попытка установки зависимостей ($attempt/$max_attempts)..."
+
+        local npm_command=""
+        case $PLATFORM in
+            "macos")
+                if [ "$CPU_ARCH" = "arm64" ]; then
+                    print_info "Оптимизация для Apple Silicon (ARM64)..."
+                    npm_command="npm install --no-audit --no-fund --timeout=120000"
+                else
+                    npm_command="npm install --no-audit --no-fund --timeout=120000"
+                fi
+                ;;
+            "raspberry-pi")
+                print_info "Установка зависимостей для Raspberry Pi (оптимизировано для ARMv7)..."
+                # Оптимизации для Raspberry Pi 3
+                export NODE_OPTIONS="--max-old-space-size=256"  # Ограничение памяти до 256MB
+                npm_command="npm install --no-audit --no-fund --timeout=300000 --legacy-peer-deps --production=false"
+                ;;
+            "linux")
+                npm_command="npm install --no-audit --no-fund --timeout=120000"
+                ;;
+        esac
+
+        # Выполнение установки
+        if eval "$npm_command"; then
+            # Проверка, что основные пакеты установлены
+            if [ -f "node_modules/.bin/drizzle-kit" ] && [ -f "node_modules/.bin/tsx" ]; then
+                print_success "Зависимости установлены успешно"
+                return 0
+            else
+                print_warning "NPM завершился успешно, но некоторые пакеты могут отсутствовать"
+                # Проверяем наличие основных пакетов
+                if [ ! -f "node_modules/.bin/drizzle-kit" ]; then
+                    print_warning "drizzle-kit не найден, пробуем установить отдельно..."
+                    npm install drizzle-kit --save-dev --timeout=60000 || print_warning "Не удалось установить drizzle-kit отдельно"
+                fi
+                if [ ! -f "node_modules/.bin/tsx" ]; then
+                    print_warning "tsx не найден, пробуем установить отдельно..."
+                    npm install tsx --save-dev --timeout=60000 || print_warning "Не удалось установить tsx отдельно"
+                fi
+                # Проверяем еще раз
+                if [ -f "node_modules/.bin/drizzle-kit" ] && [ -f "node_modules/.bin/tsx" ]; then
+                    print_success "Зависимости установлены успешно после дополнительных установок"
+                    return 0
+                fi
+            fi
+        else
+            print_warning "Попытка $attempt не удалась"
+            if [ $attempt -lt $max_attempts ]; then
+                print_info "Ожидание перед следующей попыткой..."
+                sleep 5
+            fi
+        fi
+
+        attempt=$((attempt + 1))
+    done
+
+    print_error "Не удалось установить зависимости после $max_attempts попыток"
+    print_info "Возможные решения:"
+    print_info "1. Проверьте подключение к интернету"
+    print_info "2. Попробуйте установить зависимости вручную: npm install"
+    print_info "3. Убедитесь, что Node.js и npm работают корректно"
+    exit 1
 }
 
 # Сборка нативных модулей
@@ -394,22 +438,38 @@ setup_database() {
         return 1
     fi
 
-    # Применение миграций
-    if command -v npm &> /dev/null; then
-        print_info "Применение миграций базы данных..."
+    # Применение миграций с повторными попытками
+    local max_attempts=3
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        print_info "Попытка настройки базы данных ($attempt/$max_attempts)..."
 
         if npm run db:push 2>&1; then
-            print_success "База данных настроена успешно"
-            return 0
+            # Проверяем, создалась ли база данных
+            if [ -f "data/kanbe.db" ]; then
+                print_success "База данных настроена успешно"
+                return 0
+            else
+                print_warning "Команда db:push завершилась успешно, но файл базы данных не найден"
+            fi
         else
-            print_error "Не удалось настроить базу данных"
-            print_info "Попробуйте выполнить 'npm run db:push' вручную"
-            return 1
+            print_warning "Попытка $attempt не удалась"
+            if [ $attempt -lt $max_attempts ]; then
+                print_info "Ожидание перед следующей попыткой..."
+                sleep 3
+            fi
         fi
-    else
-        print_warning "NPM не найден, пропуск настройки базы данных"
-        return 1
-    fi
+
+        attempt=$((attempt + 1))
+    done
+
+    print_error "Не удалось настроить базу данных после $max_attempts попыток"
+    print_info "Возможные решения:"
+    print_info "1. Проверьте, что drizzle-kit установлен: ls node_modules/.bin/drizzle-kit"
+    print_info "2. Попробуйте выполнить 'npm run db:push' вручную"
+    print_info "3. Проверьте логи на наличие ошибок"
+    return 1
 }
 
 # Настройка типа установки (только один пользователь)
@@ -917,7 +977,7 @@ Environment=DATABASE_URL=$WORKING_DIR/data/kanbe.db
 Environment=SESSION_SECRET=$SESSION_SECRET
 
 # Raspberry Pi оптимизации
-Environment=NODE_OPTIONS=--max-old-space-size=256 --optimize-for-size
+Environment=NODE_OPTIONS=--max-old-space-size=256
 Environment=UV_THREADPOOL_SIZE=2
 Environment=SQLITE_BUSY_TIMEOUT=30000
 
