@@ -239,16 +239,76 @@ export default function Analytics() {
         }
       };
 
+      // Add comprehensive data from all tabs
+      docDefinition.content.push(
+        { text: 'Детальная аналитика:', style: 'sectionHeader', pageBreak: 'before' },
+        { text: 'Прогресс выполнения:', style: 'subheader' },
+        {
+          ul: [
+            `Среднее время выполнения задач: ${analyticsData.averageCompletionTime} дней`,
+            `Общая продуктивность: ${analyticsData.productivityScore}%`,
+          ]
+        },
+        { text: '', margin: [0, 0, 0, 10] }
+      );
+
+      // Add calendar data
+      const todayTasks = tasks.filter(task => {
+        if (!task.dueDate) return false;
+        const taskDate = new Date(task.dueDate * 1000);
+        const today = new Date();
+        return taskDate.toDateString() === today.toDateString();
+      });
+
+      if (todayTasks.length > 0) {
+        docDefinition.content.push(
+          { text: 'Задачи на сегодня:', style: 'subheader' },
+          {
+            ul: todayTasks.map(task =>
+              `${task.title} (${task.status === 'done' ? 'Выполнено' :
+                task.status === 'in-progress' ? 'В процессе' : 'К выполнению'})`
+            )
+          },
+          { text: '', margin: [0, 0, 0, 10] }
+        );
+      }
+
       // Add charts as images with error handling
       try {
         const charts = document.querySelectorAll('.recharts-wrapper');
         if (charts.length > 0) {
-          docDefinition.content.push({ text: 'Графики:', style: 'sectionHeader' });
+          docDefinition.content.push(
+            { text: 'Графики и диаграммы:', style: 'sectionHeader', pageBreak: 'before' },
+            { text: 'Обзор:', style: 'subheader' }
+          );
 
-          for (let i = 0; i < Math.min(charts.length, 3); i++) {
+          // Capture charts from Overview tab (first 2 charts)
+          for (let i = 0; i < Math.min(charts.length, 2); i++) {
             const chart = charts[i] as HTMLElement;
             if (chart) {
               const canvas = await html2canvas(chart, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff'
+              });
+              const imgData = canvas.toDataURL('image/png');
+
+              docDefinition.content.push({
+                image: imgData,
+                width: 400,
+                margin: [0, 10, 0, 20],
+                alignment: 'center'
+              });
+            }
+          }
+
+          // Try to capture progress chart if available
+          if (charts.length > 2) {
+            docDefinition.content.push({ text: 'Прогресс:', style: 'subheader' });
+            const progressChart = charts[2] as HTMLElement;
+            if (progressChart) {
+              const canvas = await html2canvas(progressChart, {
                 scale: 2,
                 useCORS: true,
                 allowTaint: true,
@@ -297,7 +357,7 @@ export default function Analytics() {
     try {
       const wb = XLSX.utils.book_new();
 
-      // Summary sheet
+      // Summary sheet (Обзор)
       const summaryData = [
         ['Метрика', 'Значение'],
         ['Всего задач', analyticsData.totalTasks],
@@ -309,7 +369,7 @@ export default function Analytics() {
       const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(wb, summarySheet, 'Сводка');
 
-      // Tasks by Status
+      // Tasks by Status (Обзор)
       const statusData = [
         ['Статус', 'Количество'],
         ...analyticsData.tasksByStatus.map(item => [item.name, item.value])
@@ -317,7 +377,7 @@ export default function Analytics() {
       const statusSheet = XLSX.utils.aoa_to_sheet(statusData);
       XLSX.utils.book_append_sheet(wb, statusSheet, 'По статусу');
 
-      // Tasks by Priority
+      // Tasks by Priority (Обзор)
       const priorityData = [
         ['Приоритет', 'Количество'],
         ...analyticsData.tasksByPriority.map(item => [item.name, item.value])
@@ -325,17 +385,68 @@ export default function Analytics() {
       const prioritySheet = XLSX.utils.aoa_to_sheet(priorityData);
       XLSX.utils.book_append_sheet(wb, prioritySheet, 'По приоритету');
 
-      // Completion Trend
+      // Progress data (Прогресс)
+      const progressData = [
+        ['Показатель', 'Значение'],
+        ['Среднее время выполнения', `${analyticsData.averageCompletionTime} дней`],
+        ['Общая продуктивность', `${analyticsData.productivityScore}%`],
+        ['Всего задач', analyticsData.totalTasks],
+        ['Выполненных задач', analyticsData.completedTasks],
+        ['Просроченных задач', analyticsData.overdueTasks],
+      ];
+      const progressSheet = XLSX.utils.aoa_to_sheet(progressData);
+      XLSX.utils.book_append_sheet(wb, progressSheet, 'Прогресс');
+
+      // Completion Trend (Прогресс)
       const trendData = [
         ['Дата', 'Выполнено', 'Создано'],
         ...analyticsData.completionTrend.map(item => [item.date, item.completed, item.created])
       ];
       const trendSheet = XLSX.utils.aoa_to_sheet(trendData);
-      XLSX.utils.book_append_sheet(wb, trendSheet, 'Динамика');
+      XLSX.utils.book_append_sheet(wb, trendSheet, 'Динамика выполнения');
 
-      // All tasks
+      // Calendar data (Календарь) - tasks with due dates
+      const calendarTasks = tasks.filter(task => task.dueDate).map(task => [
+        task.title,
+        task.description || '',
+        task.status,
+        task.priority || '',
+        task.dueDate ? format(new Date(task.dueDate * 1000), 'dd.MM.yyyy', { locale: ru }) : '',
+        task.dueDate ? format(new Date(task.dueDate * 1000), 'EEEE', { locale: ru }) : '',
+        task.status === 'done' ? 'Да' : 'Нет'
+      ]);
+
+      const calendarData = [
+        ['Название', 'Описание', 'Статус', 'Приоритет', 'Дедлайн', 'День недели', 'Выполнено'],
+        ...calendarTasks
+      ];
+      const calendarSheet = XLSX.utils.aoa_to_sheet(calendarData);
+      XLSX.utils.book_append_sheet(wb, calendarSheet, 'Календарь задач');
+
+      // Today's tasks (Календарь)
+      const today = new Date();
+      const todayTasks = tasks.filter(task => {
+        if (!task.dueDate) return false;
+        const taskDate = new Date(task.dueDate * 1000);
+        return taskDate.toDateString() === today.toDateString();
+      }).map(task => [
+        task.title,
+        task.description || '',
+        task.status,
+        task.priority || '',
+        task.status === 'done' ? 'Да' : 'Нет'
+      ]);
+
+      const todayData = [
+        ['Название', 'Описание', 'Статус', 'Приоритет', 'Выполнено'],
+        ...todayTasks
+      ];
+      const todaySheet = XLSX.utils.aoa_to_sheet(todayData);
+      XLSX.utils.book_append_sheet(wb, todaySheet, 'Задачи на сегодня');
+
+      // All tasks (детальный список)
       const tasksData = [
-        ['ID', 'Название', 'Описание', 'Статус', 'Приоритет', 'Создано', 'Дедлайн'],
+        ['ID', 'Название', 'Описание', 'Статус', 'Приоритет', 'Создано', 'Дедлайн', 'Выполнено'],
         ...tasks.map(task => [
           task.id,
           task.title,
@@ -343,18 +454,24 @@ export default function Analytics() {
           task.status,
           task.priority || '',
           task.createdAt ? format(new Date(task.createdAt * 1000), 'dd.MM.yyyy HH:mm', { locale: ru }) : '',
-          task.dueDate ? format(new Date(task.dueDate * 1000), 'dd.MM.yyyy', { locale: ru }) : ''
+          task.dueDate ? format(new Date(task.dueDate * 1000), 'dd.MM.yyyy', { locale: ru }) : '',
+          task.status === 'done' ? 'Да' : 'Нет'
         ])
       ];
       const tasksSheet = XLSX.utils.aoa_to_sheet(tasksData);
       XLSX.utils.book_append_sheet(wb, tasksSheet, 'Все задачи');
 
       XLSX.writeFile(wb, `analytics-report-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+
+      toast({
+        title: "Успешно",
+        description: "Excel отчет скачан",
+      });
     } catch (error) {
       console.error('Error exporting Excel:', error);
       toast({
-        title: "Ошибка",
-        description: "Не удалось экспортировать в Excel",
+        title: "Ошибка экспорта Excel",
+        description: error instanceof Error ? error.message : "Не удалось создать Excel отчет",
         variant: "destructive",
       });
     }
