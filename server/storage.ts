@@ -17,6 +17,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: { email: string; password: string; firstName?: string; lastName?: string }): Promise<User>;
   upsertUser(user: { id: string; email: string; firstName?: string; lastName?: string; profileImageUrl?: string }): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<User>;
 
   // Task operations
   getTasks(userId: string): Promise<Task[]>;
@@ -84,6 +85,18 @@ export class DatabaseStorage implements IStorage {
           updatedAt: sql`(strftime('%s', 'now'))`,
         },
       })
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        ...updates,
+        updatedAt: sql`(strftime('%s', 'now'))`,
+      })
+      .where(eq(users.id, id))
       .returning();
     return user;
   }

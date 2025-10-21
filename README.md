@@ -147,6 +147,7 @@ npm run start
 
 #### 👤 Профиль пользователя
 - Редактируйте личную информацию и настройки
+- Загружайте аватар (изображения до 5MB)
 - Управляйте статусом присутствия
 - Настраивайте уведомления и часовой пояс
 
@@ -160,6 +161,8 @@ npm run start
 - `POST /api/auth/register` - Регистрация
 - `POST /api/auth/login` - Вход
 - `POST /api/auth/logout` - Выход
+- `PATCH /api/auth/profile` - Обновление профиля
+- `POST /api/auth/avatar` - Загрузка аватара (multipart/form-data)
 
 #### Задачи
 - `GET /api/tasks` - Получить все задачи пользователя
@@ -482,7 +485,6 @@ sudo ln -sf /usr/local/lib/nodejs/node-v18.19.1-darwin-arm64/bin/* /usr/local/bi
 #### macOS
 ```bash
 # Проверить занятые порты
-lsof -i :5000
 lsof -i :3000
 
 # Убить процесс
@@ -492,7 +494,6 @@ kill -9 <PID>
 #### Linux/Raspberry Pi
 ```bash
 # Проверить занятые порты
-sudo netstat -tulpn | grep :5000
 sudo netstat -tulpn | grep :3000
 # Изменить порты в .env файле
 ```
@@ -503,22 +504,6 @@ sudo netstat -tulpn | grep :3000
 npm run dev:client -- --port 3001
 
 # Или изменить в vite.config.ts
-```
-
-### Nginx не работает (только Linux)
-```bash
-sudo nginx -t
-sudo systemctl restart nginx
-```
-
-### Проблемы с производительностью на Apple Silicon
-```bash
-# Включить Rosetta для лучшей совместимости (если нужно)
-# Некоторые старые приложения могут требовать Rosetta 2
-
-# Проверить архитектуру процессов
-arch
-file $(which node)
 ```
 
 ### Проблемы с памятью на Raspberry Pi

@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, Save, UserIcon, Settings, Bell, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { USER_STATUSES, type User, type UserStatus } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -31,6 +31,7 @@ export default function Profile() {
     notificationsEnabled: true,
     emailNotifications: true,
   });
+  const [fileInputRef, setFileInputRef] = useState<HTMLInputElement | null>(null);
 
   // Fetch user profile
   const { data: profile, isLoading } = useQuery<User>({
@@ -81,9 +82,67 @@ export default function Profile() {
     updateProfileMutation.mutate(formData);
   };
 
-  const handleAvatarUpload = () => {
-    // TODO: Implement avatar upload
-    console.log("Загрузка аватара будет реализована в следующей версии");
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Ошибка",
+        description: "Пожалуйста, выберите изображение",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Ошибка",
+        description: "Размер файла не должен превышать 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const response = await fetch('/api/auth/avatar', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload avatar');
+      }
+
+      const updatedUser = await response.json();
+
+      // Update the profile data
+      setFormData(prev => ({
+        ...prev,
+        // Update any profile fields if needed
+      }));
+
+      // Invalidate user queries to refresh profile data
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+
+      toast({
+        title: "Аватар обновлен",
+        description: "Ваш аватар был успешно загружен",
+      });
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить аватар",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusInfo = (status: UserStatus) => {
@@ -173,10 +232,17 @@ export default function Profile() {
                     size="icon"
                     variant="secondary"
                     className="absolute -bottom-2 -right-2 rounded-full w-8 h-8"
-                    onClick={handleAvatarUpload}
+                    onClick={() => fileInputRef?.click()}
                   >
                     <Camera className="w-4 h-4" />
                   </Button>
+                  <input
+                    ref={setFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
                 </div>
 
                 <div className="flex-1 space-y-4">

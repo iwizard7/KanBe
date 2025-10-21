@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import multer from "multer";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./authSetup";
 import { insertTaskSchema, updateTaskSchema } from "@shared/schema";
@@ -45,6 +46,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     req.logout(() => {
       res.redirect('/login');
     });
+  });
+
+  // Update profile
+  app.patch('/api/auth/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { firstName, lastName, bio, timezone, status, notificationsEnabled, emailNotifications } = req.body;
+
+      const updateData: any = {};
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (lastName !== undefined) updateData.lastName = lastName;
+      if (bio !== undefined) updateData.bio = bio;
+      if (timezone !== undefined) updateData.timezone = timezone;
+      if (status !== undefined) updateData.status = status;
+      if (notificationsEnabled !== undefined) updateData.notificationsEnabled = notificationsEnabled ? 1 : 0;
+      if (emailNotifications !== undefined) updateData.emailNotifications = emailNotifications ? 1 : 0;
+
+      const updatedUser = await storage.updateUser(userId, updateData);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // Upload avatar
+  const upload = multer({
+    dest: 'uploads/',
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'));
+      }
+    }
+  });
+
+  app.post('/api/auth/avatar', isAuthenticated, upload.single('avatar'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const userId = req.user.id;
+      const avatarUrl = `/uploads/${req.file.filename}`;
+
+      const updatedUser = await storage.updateUser(userId, { profileImageUrl: avatarUrl });
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      res.status(500).json({ message: "Failed to upload avatar" });
+    }
   });
 
   // Task routes - all protected
