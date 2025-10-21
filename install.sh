@@ -357,17 +357,35 @@ install_dependencies() {
                 ;;
             "raspberry-pi")
                 print_info "Установка зависимостей для Raspberry Pi (оптимизировано для ARMv7)..."
-                # Оптимизации для Raspberry Pi 3 - правильная настройка памяти
+                # Оптимизации для Raspberry Pi - агрессивная настройка памяти и производительности
                 unset NODE_OPTIONS
-                export NODE_OPTIONS="--max-old-space-size=1024"
+                export NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size"
                 print_info "NODE_OPTIONS установлены: $NODE_OPTIONS"
+
                 # Используем локальную директорию для кэша вместо /tmp, чтобы избежать переполнения RAM
                 export npm_config_cache="$HOME/.npm-cache-kanbe"
                 export npm_config_tmp="$PWD/.npm-tmp"
                 # Создаем директории для кэша если они не существуют
                 mkdir -p "$HOME/.npm-cache-kanbe" "$PWD/.npm-tmp"
-                # Специальные настройки для Raspberry Pi 3 - максимально ускоренная установка с параллелизмом
-                npm_command="npm install --no-audit --no-fund --timeout=1800000 --legacy-peer-deps --production=false --prefer-offline --no-optional --no-package-lock --verbose --no-bin-links --ignore-scripts --jobs=4"
+
+                # Специальные настройки для Raspberry Pi - пошаговая установка для избежания зависаний
+                # Сначала устанавливаем только основные зависимости без devDependencies
+                print_info "Шаг 1: Установка основных зависимостей..."
+                if ! npm install --no-audit --no-fund --timeout=600000 --legacy-peer-deps --production --prefer-offline --no-optional --no-package-lock --verbose --no-bin-links --ignore-scripts --jobs=2; then
+                    print_warning "Не удалось установить основные зависимости, пробуем альтернативный подход..."
+                    # Альтернативный подход: установка по одной зависимости
+                    npm install --save express@^4.21.2 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || print_warning "express не установлен"
+                    npm install --save react@^18.3.1 react-dom@^18.3.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || print_warning "React не установлен"
+                    npm install --save better-sqlite3@^12.4.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || print_warning "better-sqlite3 не установлен"
+                    npm install --save drizzle-orm@^0.39.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || print_warning "drizzle-orm не установлен"
+                fi
+
+                # Затем устанавливаем devDependencies отдельно
+                print_info "Шаг 2: Установка devDependencies..."
+                npm install --only=dev --no-audit --no-fund --timeout=600000 --legacy-peer-deps --no-package-lock --verbose --no-bin-links --ignore-scripts --jobs=1 || print_warning "devDependencies установлены частично"
+
+                # Финальная проверка и дозаполнение
+                npm_command="npm install --no-audit --no-fund --timeout=300000 --legacy-peer-deps --no-package-lock --verbose --no-bin-links --ignore-scripts --jobs=1"
                 ;;
             "linux")
                 npm_command="npm install --no-audit --no-fund --timeout=120000"
@@ -433,7 +451,15 @@ build_native_modules() {
                 print_success "Нативные модули собраны"
             fi
             ;;
-        "raspberry-pi"|"linux")
+        "raspberry-pi")
+            print_info "Сборка для Raspberry Pi (ARMv7)..."
+            # Для Raspberry Pi используем build-from-source с оптимизациями
+            export NODE_OPTIONS="--max-old-space-size=512 --optimize-for-size"
+            export UV_THREADPOOL_SIZE=2
+            npm rebuild better-sqlite3 --build-from-source --timeout=600000
+            print_success "Нативные модули собраны для Raspberry Pi"
+            ;;
+        "linux")
             print_info "Сборка для ARM архитектуры..."
             npm rebuild better-sqlite3
             print_success "Нативные модули собраны"
@@ -993,7 +1019,7 @@ Environment=DATABASE_URL=$WORKING_DIR/data/kanbe.db
 Environment=SESSION_SECRET=$SESSION_SECRET
 
 # Raspberry Pi оптимизации
-Environment=NODE_OPTIONS=--max-old-space-size=256
+Environment=NODE_OPTIONS=--max-old-space-size=256 --optimize-for-size
 Environment=UV_THREADPOOL_SIZE=2
 Environment=SQLITE_BUSY_TIMEOUT=30000
 
