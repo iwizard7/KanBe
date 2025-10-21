@@ -87,25 +87,55 @@ install_nodejs_pi() {
     # Проверка существующей установки
     if command -v node &> /dev/null && command -v npm &> /dev/null; then
         NODE_VERSION=$(node --version 2>/dev/null)
-        if [[ $NODE_VERSION == v18* ]] || [[ $NODE_VERSION == v20* ]]; then
+        NPM_VERSION=$(npm --version 2>/dev/null)
+
+        # Проверяем совместимость Node.js и npm
+        if [[ $NODE_VERSION == v20* ]]; then
+            # Node.js 20 требует npm >= 9.6.5
+            if [[ $NPM_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                NPM_MAJOR=$(echo $NPM_VERSION | cut -d. -f1)
+                NPM_MINOR=$(echo $NPM_VERSION | cut -d. -f2)
+                if [ $NPM_MAJOR -gt 9 ] || ([ $NPM_MAJOR -eq 9 ] && [ $NPM_MINOR -ge 6 ]); then
+                    print_success "Node.js уже установлен: $NODE_VERSION"
+                    print_success "NPM совместим: $NPM_VERSION"
+                    return 0
+                fi
+            fi
+            print_warning "Node.js $NODE_VERSION требует обновления npm (текущий: $NPM_VERSION)"
+        elif [[ $NODE_VERSION == v18* ]]; then
             print_success "Node.js уже установлен: $NODE_VERSION"
             return 0
         fi
     fi
 
     # Установка через NodeSource для Raspberry Pi
-    print_info "Установка Node.js 18 через NodeSource..."
+    print_info "Установка Node.js 20 через NodeSource (совместим с Raspberry Pi ARM64)..."
 
-    # Добавление репозитория NodeSource
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    # Добавление репозитория NodeSource для Node.js 20
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 
     # Установка Node.js
     sudo apt-get install -y nodejs
 
     # Проверка установки
     if command -v node &> /dev/null && command -v npm &> /dev/null; then
-        print_success "Node.js установлен: $(node --version)"
-        print_success "NPM установлен: $(npm --version)"
+        NODE_VER=$(node --version)
+        NPM_VER=$(npm --version)
+        print_success "Node.js установлен: $NODE_VER"
+        print_success "NPM установлен: $NPM_VER"
+
+        # Проверяем совместимость после установки
+        if [[ $NODE_VER == v20* ]]; then
+            NPM_MAJOR=$(echo $NPM_VER | cut -d. -f1)
+            NPM_MINOR=$(echo $NPM_VER | cut -d. -f2)
+            if [ $NPM_MAJOR -gt 9 ] || ([ $NPM_MAJOR -eq 9 ] && [ $NPM_MINOR -ge 6 ]); then
+                print_success "Версии Node.js и npm совместимы"
+            else
+                print_warning "Обновление npm для совместимости с Node.js 20..."
+                sudo npm install -g npm@latest
+                print_success "NPM обновлен: $(npm --version)"
+            fi
+        fi
     else
         print_error "Ошибка установки Node.js"
         exit 1
@@ -127,115 +157,119 @@ install_dependencies_step_by_step() {
     print_info "NODE_OPTIONS: $NODE_OPTIONS"
     print_info "UV_THREADPOOL_SIZE: $UV_THREADPOOL_SIZE"
 
+    # Очистка кэша npm перед установкой
+    print_info "Очистка кэша npm..."
+    npm cache clean --force 2>/dev/null || true
+
     # Шаг 1: Установка основных runtime зависимостей по одной
     print_info "Шаг 1/4: Установка основных зависимостей по одной..."
 
     # Устанавливаем по одной зависимости с паузами
     print_info "Установка express..."
-    npm install --save express@^4.21.2 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "express не установлен"
+    timeout 300 npm install --save express@^4.21.2 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "express не установлен"
 
     sleep 2
 
     print_info "Установка better-sqlite3..."
-    npm install --save better-sqlite3@^12.4.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || print_warning "better-sqlite3 не установлен"
+    timeout 600 npm install --save better-sqlite3@^12.4.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "better-sqlite3 не установлен"
 
     sleep 2
 
     print_info "Установка drizzle-orm..."
-    npm install --save drizzle-orm@^0.39.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "drizzle-orm не установлен"
+    timeout 300 npm install --save drizzle-orm@^0.39.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "drizzle-orm не установлен"
 
     sleep 2
 
     print_info "Установка bcrypt..."
-    npm install --save bcrypt@^5.1.1 --timeout=180000 --legacy-peer-deps --no-package-lock --verbose || print_warning "bcrypt не установлен"
+    timeout 300 npm install --save bcrypt@^5.1.1 --timeout=180000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "bcrypt не установлен"
 
     sleep 2
 
     print_info "Установка ws..."
-    npm install --save ws@^8.18.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "ws не установлен"
+    timeout 300 npm install --save ws@^8.18.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "ws не установлен"
 
     # Шаг 2: Установка React и связанных пакетов по одной
     print_info "Шаг 2/4: Установка React зависимостей по одной..."
 
     print_info "Установка react..."
-    npm install --save react@^18.3.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "react не установлен"
+    npm install --save react@^18.3.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "react не установлен"
 
     sleep 2
 
     print_info "Установка react-dom..."
-    npm install --save react-dom@^18.3.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "react-dom не установлен"
+    npm install --save react-dom@^18.3.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "react-dom не установлен"
 
     sleep 2
 
     print_info "Установка @tanstack/react-query..."
-    npm install --save @tanstack/react-query@^5.60.5 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "@tanstack/react-query не установлен"
+    npm install --save @tanstack/react-query@^5.60.5 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "@tanstack/react-query не установлен"
 
     sleep 2
 
     print_info "Установка wouter..."
-    npm install --save wouter@^3.3.5 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "wouter не установлен"
+    npm install --save wouter@^3.3.5 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "wouter не установлен"
 
     # Шаг 3: Установка UI библиотек (Radix UI) по одной
     print_info "Шаг 3/4: Установка UI компонентов по одной..."
 
     print_info "Установка @radix-ui/react-dialog..."
-    npm install --save @radix-ui/react-dialog@^1.1.7 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "@radix-ui/react-dialog не установлен"
+    npm install --save @radix-ui/react-dialog@^1.1.7 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "@radix-ui/react-dialog не установлен"
 
     sleep 2
 
     print_info "Установка @radix-ui/react-dropdown-menu..."
-    npm install --save @radix-ui/react-dropdown-menu@^2.1.7 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "@radix-ui/react-dropdown-menu не установлен"
+    npm install --save @radix-ui/react-dropdown-menu@^2.1.7 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "@radix-ui/react-dropdown-menu не установлен"
 
     sleep 2
 
     print_info "Установка lucide-react..."
-    npm install --save lucide-react@^0.453.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "lucide-react не установлен"
+    npm install --save lucide-react@^0.453.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "lucide-react не установлен"
 
     sleep 2
 
     print_info "Установка class-variance-authority..."
-    npm install --save class-variance-authority@^0.7.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "class-variance-authority не установлен"
+    npm install --save class-variance-authority@^0.7.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "class-variance-authority не установлен"
 
     sleep 2
 
     print_info "Установка clsx..."
-    npm install --save clsx@^2.1.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "clsx не установлен"
+    npm install --save clsx@^2.1.1 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "clsx не установлен"
 
     sleep 2
 
     print_info "Установка tailwind-merge..."
-    npm install --save tailwind-merge@^2.6.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "tailwind-merge не установлен"
+    npm install --save tailwind-merge@^2.6.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "tailwind-merge не установлен"
 
     # Шаг 4: Установка dev зависимостей по одной
     print_info "Шаг 4/4: Установка dev зависимостей по одной..."
 
     print_info "Установка vite..."
-    npm install --save-dev vite@^5.4.20 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "vite не установлен"
+    npm install --save-dev vite@^5.4.20 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "vite не установлен"
 
     sleep 2
 
     print_info "Установка @vitejs/plugin-react..."
-    npm install --save-dev @vitejs/plugin-react@^4.7.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "@vitejs/plugin-react не установлен"
+    npm install --save-dev @vitejs/plugin-react@^4.7.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "@vitejs/plugin-react не установлен"
 
     sleep 2
 
     print_info "Установка typescript..."
-    npm install --save-dev typescript@^5.6.3 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "typescript не установлен"
+    npm install --save-dev typescript@^5.6.3 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "typescript не установлен"
 
     sleep 2
 
     print_info "Установка tsx..."
-    npm install --save-dev tsx@^4.20.5 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "tsx не установлен"
+    npm install --save-dev tsx@^4.20.5 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "tsx не установлен"
 
     sleep 2
 
     print_info "Установка drizzle-kit..."
-    npm install --save-dev drizzle-kit@^0.31.4 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "drizzle-kit не установлен"
+    npm install --save-dev drizzle-kit@^0.31.4 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "drizzle-kit не установлен"
 
     sleep 2
 
     print_info "Установка esbuild..."
-    npm install --save-dev esbuild@^0.25.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose || print_warning "esbuild не установлен"
+    npm install --save-dev esbuild@^0.25.0 --timeout=120000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "esbuild не установлен"
 
     # Финальная проверка
     print_info "Проверка установки..."
@@ -381,6 +415,18 @@ EOF
 main() {
     print_header
     check_raspberry_pi
+
+    # Проверка и восстановление dpkg перед установкой Node.js
+    print_step "Проверка состояния dpkg..."
+    if ! dpkg --audit >/dev/null 2>&1; then
+        print_warning "dpkg поврежден, попытка восстановления..."
+        sudo dpkg --configure -a 2>/dev/null || print_warning "Не удалось автоматически восстановить dpkg"
+        # Попытка переустановки пакетов
+        sudo apt-get install --reinstall dpkg 2>/dev/null || print_warning "Не удалось переустановить dpkg"
+    else
+        print_success "dpkg в рабочем состоянии"
+    fi
+
     install_nodejs_pi
     install_dependencies_step_by_step
     build_native_modules_pi

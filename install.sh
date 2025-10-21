@@ -109,9 +109,26 @@ install_nodejs() {
             # Проверяем версию Node.js (должна быть 18+)
             NODE_MAJOR_VERSION=$(node --version | sed 's/v\([0-9]*\).*/\1/')
             if [ "$NODE_MAJOR_VERSION" -ge 18 ]; then
-                print_success "Node.js уже установлен подходящей версии: $NODE_VERSION"
-                print_info "NPM версия: $NPM_VERSION"
-                return 0
+                # Для Node.js 20 проверяем совместимость npm
+                if [[ $NODE_VERSION == v20* ]]; then
+                    NPM_MAJOR=$(echo $NPM_VERSION | cut -d. -f1)
+                    NPM_MINOR=$(echo $NPM_VERSION | cut -d. -f2)
+                    if [ $NPM_MAJOR -gt 9 ] || ([ $NPM_MAJOR -eq 9 ] && [ $NPM_MINOR -ge 6 ]); then
+                        print_success "Node.js уже установлен подходящей версии: $NODE_VERSION"
+                        print_success "NPM совместим: $NPM_VERSION"
+                        return 0
+                    else
+                        print_warning "Node.js $NODE_VERSION требует обновления npm (текущий: $NPM_VERSION)"
+                        print_info "Будет выполнено обновление npm"
+                        npm install -g npm@latest
+                        print_success "NPM обновлен: $(npm --version)"
+                        return 0
+                    fi
+                else
+                    print_success "Node.js уже установлен подходящей версии: $NODE_VERSION"
+                    print_info "NPM версия: $NPM_VERSION"
+                    return 0
+                fi
             else
                 print_warning "Найден Node.js версии $NODE_VERSION, требуется 18+"
                 print_info "Будет выполнена установка более новой версии"
@@ -161,6 +178,13 @@ install_nodejs() {
                 if [ "$node_installed" = false ]; then
                     print_info "Пробуем установить через официальный репозиторий Debian..."
 
+                    # Проверка и восстановление dpkg перед установкой
+                    if ! dpkg --audit >/dev/null 2>&1; then
+                        print_warning "dpkg поврежден, попытка восстановления..."
+                        sudo dpkg --configure -a 2>/dev/null || print_warning "Не удалось автоматически восстановить dpkg"
+                        sudo apt-get install --reinstall dpkg 2>/dev/null || print_warning "Не удалось переустановить dpkg"
+                    fi
+
                     # Обновление пакетов
                     print_info "Обновление списка пакетов..."
                     if ! sudo apt-get update 2>/dev/null; then
@@ -178,11 +202,11 @@ install_nodejs() {
                         if command -v node &> /dev/null; then
                             NODE_VER=$(node --version 2>/dev/null || echo "unknown")
                             print_info "Node.js найден в системе: $NODE_VER"
-                            if [[ $NODE_VER == v18* ]]; then
+                            if [[ $NODE_VER == v18* ]] || [[ $NODE_VER == v20* ]]; then
                                 node_installed=true
-                                print_success "Node.js v18 найден в системе"
+                                print_success "Node.js $NODE_VER найден в системе"
                             else
-                                print_warning "Найден Node.js версии $NODE_VER, требуется v18"
+                                print_warning "Найден Node.js версии $NODE_VER, требуется v18+"
                             fi
                         fi
                     fi
@@ -345,6 +369,12 @@ install_dependencies() {
             npm cache clean --force 2>/dev/null || true
         fi
 
+        # Очистка кэша npm перед первой попыткой для Raspberry Pi
+        if [ $attempt -eq 1 ] && [ "$PLATFORM" = "raspberry-pi" ]; then
+            print_info "Очистка кэша npm для Raspberry Pi..."
+            npm cache clean --force 2>/dev/null || true
+        fi
+
         local npm_command=""
         case $PLATFORM in
             "macos")
@@ -374,10 +404,10 @@ install_dependencies() {
                 if ! npm install --no-audit --no-fund --timeout=600000 --legacy-peer-deps --production --prefer-offline --no-optional --no-package-lock --verbose --no-bin-links --ignore-scripts --jobs=2; then
                     print_warning "Не удалось установить основные зависимости, пробуем альтернативный подход..."
                     # Альтернативный подход: установка по одной зависимости
-                    npm install --save express@^4.21.2 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || print_warning "express не установлен"
-                    npm install --save react@^18.3.1 react-dom@^18.3.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || print_warning "React не установлен"
-                    npm install --save better-sqlite3@^12.4.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || print_warning "better-sqlite3 не установлен"
-                    npm install --save drizzle-orm@^0.39.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose || print_warning "drizzle-orm не установлен"
+                    npm install --save express@^4.21.2 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "express не установлен"
+                    npm install --save react@^18.3.1 react-dom@^18.3.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "React не установлен"
+                    npm install --save better-sqlite3@^12.4.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "better-sqlite3 не установлен"
+                    npm install --save drizzle-orm@^0.39.1 --timeout=300000 --legacy-peer-deps --no-package-lock --verbose --no-fund --no-audit || print_warning "drizzle-orm не установлен"
                 fi
 
                 # Затем устанавливаем devDependencies отдельно
@@ -1223,6 +1253,11 @@ main() {
     # Создание системного сервиса
     case $PLATFORM in
         "linux"|"raspberry-pi")
+            # Проверка и восстановление dpkg перед созданием сервиса
+            if ! dpkg --audit >/dev/null 2>&1; then
+                print_warning "dpkg поврежден, попытка восстановления перед созданием сервиса..."
+                sudo dpkg --configure -a 2>/dev/null || print_warning "Не удалось восстановить dpkg"
+            fi
             create_systemd_service
             ;;
         "macos")
