@@ -136,20 +136,15 @@ install_nodejs() {
             if command -v apt-get &> /dev/null; then
                 print_info "Установка Node.js через apt..."
 
-                # Попытка 1: Через nodesource репозиторий
-                print_info "Попытка установки через nodesource репозиторий..."
+                # Попытка 1: Через системные репозитории
+                print_info "Попытка установки через системные репозитории..."
 
-                # Настройка репозитория nodesource
-                if curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - 2>/dev/null; then
-                    # Попытка установки с таймаутом
-                    if timeout 300 sudo apt-get install -y nodejs 2>/dev/null; then
-                        node_installed=true
-                        print_success "Node.js установлен через nodesource"
-                    else
-                        print_warning "Установка через nodesource не удалась"
-                    fi
+                # Попытка установки nodejs из системных репозиториев
+                if timeout 300 sudo apt-get install -y nodejs npm 2>/dev/null; then
+                    node_installed=true
+                    print_success "Node.js установлен через системные репозитории"
                 else
-                    print_warning "Не удалось настроить репозиторий nodesource"
+                    print_warning "Установка через системные репозитории не удалась"
                 fi
 
                 # Попытка 2: Через официальный репозиторий Debian/Ubuntu
