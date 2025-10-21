@@ -195,7 +195,7 @@ export default function Analytics() {
       const pdfMake = (await import('pdfmake/build/pdfmake')).default;
       const pdfFonts = await import('pdfmake/build/vfs_fonts');
 
-      // Set up pdfMake fonts
+      // Set up pdfMake with VFS for Unicode support
       if (pdfFonts && (pdfFonts as any).pdfMake) {
         pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
       }
