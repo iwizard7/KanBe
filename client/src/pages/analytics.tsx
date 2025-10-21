@@ -185,15 +185,26 @@ export default function Analytics() {
 
   const handleExportPDF = async () => {
     try {
+      toast({
+        title: "Экспорт PDF",
+        description: "Подготовка отчета...",
+      });
+
+      // Import libraries dynamically
       const { default: html2canvas } = await import('html2canvas');
       const pdfMake = (await import('pdfmake/build/pdfmake')).default;
       const pdfFonts = await import('pdfmake/build/vfs_fonts');
-      pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
+
+      // Set up pdfMake fonts
+      if (pdfFonts && (pdfFonts as any).pdfMake) {
+        pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
+      }
 
       const docDefinition: any = {
         content: [
           { text: 'Аналитика и отчеты', style: 'header' },
           { text: `Отчет на ${format(new Date(), 'dd.MM.yyyy', { locale: ru })}`, style: 'subheader' },
+          { text: '', margin: [0, 0, 0, 10] },
           { text: 'Ключевые метрики:', style: 'sectionHeader' },
           {
             ul: [
@@ -201,36 +212,82 @@ export default function Analytics() {
               `Выполнено: ${analyticsData.completedTasks}`,
               `Просрочено: ${analyticsData.overdueTasks}`,
               `Продуктивность: ${analyticsData.productivityScore}%`,
+              `Среднее время выполнения: ${analyticsData.averageCompletionTime} дней`,
             ]
           },
         ],
         styles: {
-          header: { fontSize: 20, bold: true, margin: [0, 0, 10, 0] },
-          subheader: { fontSize: 12, margin: [0, 0, 20, 0] },
-          sectionHeader: { fontSize: 16, bold: true, margin: [0, 0, 10, 0] },
+          header: {
+            fontSize: 20,
+            bold: true,
+            margin: [0, 0, 10, 0],
+            alignment: 'center'
+          },
+          subheader: {
+            fontSize: 12,
+            margin: [0, 0, 20, 0],
+            alignment: 'center'
+          },
+          sectionHeader: {
+            fontSize: 16,
+            bold: true,
+            margin: [0, 0, 10, 0]
+          },
+        },
+        defaultStyle: {
+          fontSize: 10,
         }
       };
 
-      // Add charts as images
-      const charts = document.querySelectorAll('.recharts-wrapper');
-      for (let i = 0; i < charts.length && i < 3; i++) {
-        const chart = charts[i] as HTMLElement;
-        const canvas = await html2canvas(chart);
-        const imgData = canvas.toDataURL('image/png');
+      // Add charts as images with error handling
+      try {
+        const charts = document.querySelectorAll('.recharts-wrapper');
+        if (charts.length > 0) {
+          docDefinition.content.push({ text: 'Графики:', style: 'sectionHeader' });
 
+          for (let i = 0; i < Math.min(charts.length, 3); i++) {
+            const chart = charts[i] as HTMLElement;
+            if (chart) {
+              const canvas = await html2canvas(chart, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff'
+              });
+              const imgData = canvas.toDataURL('image/png');
+
+              docDefinition.content.push({
+                image: imgData,
+                width: 400,
+                margin: [0, 10, 0, 20],
+                alignment: 'center'
+              });
+            }
+          }
+        }
+      } catch (chartError) {
+        console.warn('Could not capture charts for PDF:', chartError);
         docDefinition.content.push({
-          image: imgData,
-          width: 500,
-          margin: [0, 20, 0, 0]
+          text: 'Примечание: Графики не удалось включить в отчет',
+          italics: true,
+          color: 'gray',
+          margin: [0, 10, 0, 0]
         });
       }
 
-      pdfMake.createPdf(docDefinition).download(`analytics-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      // Create and download PDF
+      const pdfDoc = pdfMake.createPdf(docDefinition);
+      pdfDoc.download(`analytics-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+
+      toast({
+        title: "Успешно",
+        description: "PDF отчет скачан",
+      });
     } catch (error) {
       console.error('Error exporting PDF:', error);
       toast({
-        title: "Ошибка",
-        description: "Не удалось экспортировать в PDF",
+        title: "Ошибка экспорта PDF",
+        description: error instanceof Error ? error.message : "Не удалось создать PDF отчет",
         variant: "destructive",
       });
     }
