@@ -172,18 +172,59 @@ install_nodejs() {
                     print_info "Пробуем установить через официальный репозиторий Debian..."
 
                     # Обновление пакетов
-                    sudo apt-get update
+                    print_info "Обновление списка пакетов..."
+                    if ! sudo apt-get update 2>/dev/null; then
+                        print_warning "Не удалось обновить список пакетов"
+                    fi
 
                     # Попытка установить nodejs из официального репозитория
+                    print_info "Установка nodejs и npm из официального репозитория..."
                     if sudo apt-get install -y nodejs npm 2>/dev/null; then
                         node_installed=true
                         print_success "Node.js установлен через официальный репозиторий"
                     else
                         print_warning "Установка через официальный репозиторий не удалась"
+                        # Проверяем, что установлено
+                        if command -v node &> /dev/null; then
+                            NODE_VER=$(node --version 2>/dev/null || echo "unknown")
+                            print_info "Node.js найден в системе: $NODE_VER"
+                            if [[ $NODE_VER == v18* ]]; then
+                                node_installed=true
+                                print_success "Node.js v18 найден в системе"
+                            else
+                                print_warning "Найден Node.js версии $NODE_VER, требуется v18"
+                            fi
+                        fi
                     fi
                 fi
 
-                # Попытка 3: Ручная загрузка и установка
+                # Попытка 3: Через snap (если доступен)
+                if [ "$node_installed" = false ]; then
+                    print_info "Пробуем установить через snap..."
+
+                    if command -v snap &> /dev/null; then
+                        print_info "Установка Node.js через snap..."
+                        if sudo snap install node --classic 2>/dev/null; then
+                            # Snap создает ссылки в /snap/bin
+                            sudo ln -sf /snap/bin/node /usr/local/bin/node 2>/dev/null || true
+                            sudo ln -sf /snap/bin/npm /usr/local/bin/npm 2>/dev/null || true
+                            sudo ln -sf /snap/bin/npx /usr/local/bin/npx 2>/dev/null || true
+
+                            if command -v node &> /dev/null; then
+                                node_installed=true
+                                print_success "Node.js установлен через snap"
+                            else
+                                print_warning "Snap установка не создала правильные ссылки"
+                            fi
+                        else
+                            print_warning "Установка через snap не удалась"
+                        fi
+                    else
+                        print_warning "Snap не найден, пропуск установки через snap"
+                    fi
+                fi
+
+                # Попытка 4: Ручная загрузка и установка
                 if [ "$node_installed" = false ]; then
                     print_info "Пробуем ручную загрузку Node.js..."
 
@@ -197,6 +238,7 @@ install_nodejs() {
 
                     local node_url="https://nodejs.org/dist/v18.20.8/node-v18.20.8-linux-${arch}.tar.xz"
 
+                    print_info "Загрузка Node.js с ${node_url}..."
                     if curl -L -o node.tar.xz "$node_url" 2>/dev/null && [ -f node.tar.xz ]; then
                         print_info "Node.js загружен, распаковка..."
                         sudo mkdir -p /usr/local/lib/nodejs
@@ -209,6 +251,8 @@ install_nodejs() {
                         if command -v node &> /dev/null; then
                             node_installed=true
                             print_success "Node.js установлен вручную"
+                        else
+                            print_warning "Ручная установка не создала правильные ссылки"
                         fi
                     else
                         print_warning "Ручная загрузка Node.js не удалась"
