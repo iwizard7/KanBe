@@ -338,6 +338,13 @@ install_dependencies() {
     while [ $attempt -le $max_attempts ]; do
         print_info "Попытка установки зависимостей ($attempt/$max_attempts)..."
 
+        # Очистка node_modules перед повторными попытками (кроме первой)
+        if [ $attempt -gt 1 ]; then
+            print_info "Очистка node_modules перед повторной попыткой..."
+            rm -rf node_modules package-lock.json
+            npm cache clean --force 2>/dev/null || true
+        fi
+
         local npm_command=""
         case $PLATFORM in
             "macos")
@@ -398,6 +405,7 @@ install_dependencies() {
     print_info "1. Проверьте подключение к интернету"
     print_info "2. Попробуйте установить зависимости вручную: npm install"
     print_info "3. Убедитесь, что Node.js и npm работают корректно"
+    print_info "4. Попробуйте очистить кэш: npm cache clean --force && rm -rf node_modules package-lock.json"
     exit 1
 }
 
