@@ -30,17 +30,14 @@ export function Navbar({ user }: NavbarProps) {
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <img
               src={logo}
               alt="KanBe Logo"
-              className="w-12 h-12 rounded-lg object-cover"
+              className="w-24 h-24 rounded-lg object-cover"
             />
-            <h1 className="text-2xl font-semibold" data-testid="text-app-title">
-              KanBe
-            </h1>
           </div>
 
           {user && (
