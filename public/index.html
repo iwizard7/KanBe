@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KanBe - Kanban Board</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <!-- Login Screen -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-container">
+      <div class="login-logo">
+        <div class="logo-icon">📋</div>
+        <h1>KanBe</h1>
+      </div>
+      <form id="login-form" class="login-form">
+        <div class="input-group">
+          <input type="password" id="password" placeholder="Введите пароль" required>
+        </div>
+        <button type="submit" class="btn-primary">Войти</button>
+        <div id="login-error" class="error-message"></div>
+      </form>
+      <p class="hint">Пароль по умолчанию: admin</p>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="app hidden">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">📋</span>
+          <span class="logo-text">KanBe</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button id="theme-toggle-btn" class="btn-icon" title="Переключить тему">🌙</button>
+        <button id="add-column-btn" class="btn-secondary">+ Добавить колонку</button>
+        <button id="logout-btn" class="btn-icon" title="Выйти">🚪</button>
+      </div>
+    </header>
+
+    <!-- Board -->
+    <main class="board-container">
+      <div id="board" class="board"></div>
+    </main>
+  </div>
+
+  <!-- Task Modal -->
+  <div id="task-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Создать задачу</h2>
+        <button class="btn-close" onclick="closeTaskModal()">×</button>
+      </div>
+      <form id="task-form">
+        <div class="form-group">
+          <label>Название задачи</label>
+          <input type="text" id="task-title" required>
+        </div>
+
+        <div class="form-group">
+          <label>Описание</label>
+          <textarea id="task-description" rows="3"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Приоритет</label>
+            <select id="task-priority">
+              <option value="low">Низкий</option>
+              <option value="medium" selected>Средний</option>
+              <option value="high">Высокий</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Дедлайн</label>
+            <input type="date" id="task-deadline">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Тэги (через запятую)</label>
+          <input type="text" id="task-tags" placeholder="frontend, bug, urgent">
+        </div>
+
+        <div class="form-group">
+          <label>Подзадачи</label>
+          <div id="subtasks-container"></div>
+          <button type="button" class="btn-text" onclick="addSubtaskField()">+ Добавить подзадачу</button>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeTaskModal()">Отмена</button>
+          <button type="submit" class="btn-primary">Сохранить</button>
+          <button type="button" id="delete-task-btn" class="btn-danger hidden" onclick="deleteTask()">Удалить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Column Edit Modal -->
+  <div id="column-modal" class="modal hidden">
+    <div class="modal-content modal-small">
+      <div class="modal-header">
+        <h2 id="column-modal-title">Новая колонка</h2>
+        <button class="btn-close" onclick="closeColumnModal()">×</button>
+      </div>
+      <form id="column-form">
+        <div class="form-group">
+          <label>Название колонки</label>
+          <input type="text" id="column-title" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeColumnModal()">Отмена</button>
+          <button type="submit" class="btn-primary">Сохранить</button>
+          <button type="button" id="delete-column-btn" class="btn-danger hidden" onclick="deleteColumn()">Удалить
+            колонку</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
