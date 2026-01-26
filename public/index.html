@@ -9,6 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 
 <body>
@@ -39,9 +42,28 @@
           <span class="logo-icon">📋</span>
           <span class="logo-text">KanBe</span>
         </div>
+        <div class="search-box">
+          <input type="text" id="search-input" placeholder="Поиск задач или Swimlanes...">
+          <span class="search-icon">🔍</span>
+        </div>
       </div>
       <div class="header-right">
+        <div class="bg-picker">
+          <button id="bg-picker-btn" class="btn-icon" title="Сменить фон">🖼️</button>
+          <div id="bg-options" class="bg-options hidden">
+            <div class="bg-option" data-bg="default"
+              style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)"></div>
+            <div class="bg-option" data-bg="sunset"
+              style="background: linear-gradient(135deg, #4c1d95 0%, #db2777 100%)"></div>
+            <div class="bg-option" data-bg="ocean"
+              style="background: linear-gradient(135deg, #1e3a8a 0%, #0891b2 100%)"></div>
+            <div class="bg-option" data-bg="forest"
+              style="background: linear-gradient(135deg, #064e3b 0%, #10b981 100%)"></div>
+            <div class="bg-option" data-bg="minimal" style="background: #111827"></div>
+          </div>
+        </div>
         <button id="theme-toggle-btn" class="btn-icon" title="Переключить тему">🌙</button>
+        <button id="show-archive-btn" class="btn-icon" title="Архив">📦</button>
         <button id="add-column-btn" class="btn-secondary">+ Добавить колонку</button>
         <button id="logout-btn" class="btn-icon" title="Выйти">🚪</button>
       </div>
@@ -101,6 +123,8 @@
         <div class="modal-footer">
           <button type="button" class="btn-secondary" onclick="closeTaskModal()">Отмена</button>
           <button type="submit" class="btn-primary">Сохранить</button>
+          <button type="button" id="archive-task-btn" class="btn-icon hidden" title="В архив"
+            onclick="archiveTask()">📦</button>
           <button type="button" id="delete-task-btn" class="btn-danger hidden" onclick="deleteTask()">Удалить</button>
         </div>
       </form>
@@ -115,17 +139,45 @@
         <button class="btn-close" onclick="closeColumnModal()">×</button>
       </div>
       <form id="column-form">
-        <div class="form-group">
-          <label>Название колонки</label>
-          <input type="text" id="column-title" required>
-        </div>
+        <label for="column-title">Название колонки</label>
+        <input type="text" id="column-title" required placeholder="Например: В работе">
+
+        <label for="column-wip">WIP-лимит (0 - без лимита)</label>
+        <input type="number" id="column-wip" min="0" value="0">
+
         <div class="modal-footer">
-          <button type="button" class="btn-secondary" onclick="closeColumnModal()">Отмена</button>
+          <button type="button" id="delete-column-btn" class="btn-danger hidden">Удалить</button>
+          <div style="flex-grow: 1;"></div>
+          <button type="button" class="btn-text" onclick="closeColumnModal()">Отмена</button>
           <button type="submit" class="btn-primary">Сохранить</button>
-          <button type="button" id="delete-column-btn" class="btn-danger hidden" onclick="deleteColumn()">Удалить
-            колонку</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Task History Modal -->
+  <div id="history-modal" class="modal hidden">
+    <div class="modal-content history-modal-content">
+      <div class="modal-header">
+        <h2 id="history-title">История задачи</h2>
+        <button class="btn-icon" onclick="closeHistoryModal()">×</button>
+      </div>
+      <div id="history-list" class="history-list">
+        <!-- History items will be here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Archive Modal -->
+  <div id="archive-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Архив задач</h2>
+        <button class="btn-close" onclick="closeArchiveModal()">×</button>
+      </div>
+      <div class="archive-list" id="archive-list">
+        <!-- Archived tasks will appear here -->
+      </div>
     </div>
   </div>
 

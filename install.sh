@@ -62,6 +62,15 @@ cp "$SOURCE_DIR/package.json" "$target_dir/"
 cp "$SOURCE_DIR/server.js" "$target_dir/"
 cp "$SOURCE_DIR/README.md" "$target_dir/"
 
+# Create .env file if it doesn't exist
+if [ ! -f "$target_dir/.env" ]; then
+    echo -e "${BLUE}Создание .env файла...${NC}"
+    echo "PORT=3000" > "$target_dir/.env"
+    echo "SESSION_SECRET=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)" >> "$target_dir/.env"
+    echo "NODE_ENV=production" >> "$target_dir/.env"
+    echo "BACKUP_DAYS=7" >> "$target_dir/.env"
+fi
+
 cd "$target_dir"
 
 # 5. Install dependencies

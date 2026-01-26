@@ -1,33 +1,50 @@
+require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
+const cron = require('node-cron');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Security: Rate limiting for login
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 login attempts per window
+  message: { error: 'Слишком много попыток входа. Попробуйте через 15 минут.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(session({
-  secret: 'kanban-secret-key-change-in-production',
+  secret: process.env.SESSION_SECRET || 'kanban-fallback-secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === 'production' && false, // Set to true if using HTTPS
+    httpOnly: true,
+    sameSite: 'lax'
+  }
 }));
 
 // Data directories
 const DATA_DIR = path.join(__dirname, 'data');
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const BOARD_FILE = path.join(DATA_DIR, 'board.json');
 
-// Initialize data directory
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR);
-}
+// Initialize data directories
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
+if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
 
 // Initialize config file with default password "admin"
 if (!fs.existsSync(CONFIG_FILE)) {
@@ -48,7 +65,36 @@ if (!fs.existsSync(BOARD_FILE)) {
   fs.writeFileSync(BOARD_FILE, JSON.stringify(defaultBoard, null, 2));
 }
 
-// Helper functions
+// Backup logic
+function createBackup() {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = path.join(BACKUP_DIR, `board-backup-${timestamp}.json`);
+  fs.copyFileSync(BOARD_FILE, backupPath);
+  console.log(`Backup created: ${backupPath}`);
+
+  // Clean old backups (keep last N days)
+  const keepDays = parseInt(process.env.BACKUP_DAYS) || 7;
+  const files = fs.readdirSync(BACKUP_DIR);
+  const now = Date.now();
+
+  files.forEach(file => {
+    const filePath = path.join(BACKUP_DIR, file);
+    const stats = fs.statSync(filePath);
+    const ageInDays = (now - stats.mtimeMs) / (1000 * 60 * 60 * 24);
+
+    if (ageInDays > keepDays) {
+      fs.unlinkSync(filePath);
+      console.log(`Deleted old backup: ${file}`);
+    }
+  });
+}
+
+// Schedule daily backup at midnight
+cron.schedule('0 0 * * *', () => {
+  createBackup();
+});
+
+// Helper functions (same as before but with backup on save)
 function readConfig() {
   return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
 }
@@ -61,6 +107,7 @@ function saveBoard(board) {
   fs.writeFileSync(BOARD_FILE, JSON.stringify(board, null, 2));
 }
 
+
 // Authentication middleware
 function requireAuth(req, res, next) {
   if (req.session.authenticated) {
@@ -71,10 +118,10 @@ function requireAuth(req, res, next) {
 }
 
 // Routes - Authentication
-app.post('/api/login', (req, res) => {
+app.post('/api/login', loginLimiter, (req, res) => {
   const { password } = req.body;
   const config = readConfig();
-  
+
   if (bcrypt.compareSync(password, config.passwordHash)) {
     req.session.authenticated = true;
     res.json({ success: true });
@@ -95,20 +142,76 @@ app.get('/api/check-auth', (req, res) => {
 // Routes - Board
 app.get('/api/board', requireAuth, (req, res) => {
   const board = readBoard();
+  // Filter out archived tasks for the main board view
+  board.columns.forEach(column => {
+    column.tasks = column.tasks.filter(t => !t.archived);
+  });
   res.json(board);
 });
 
-// Routes - Columns
+// GET archived tasks
+app.get('/api/tasks/archived', requireAuth, (req, res) => {
+  const board = readBoard();
+  const archivedTasks = [];
+  board.columns.forEach(column => {
+    column.tasks.forEach(task => {
+      if (task.archived) archivedTasks.push({ ...task, columnTitle: column.title });
+    });
+  });
+  res.json(archivedTasks);
+});
+
+// GET task history
+app.get('/api/tasks/:taskId/history', requireAuth, (req, res) => {
+  const { taskId } = req.params;
+  const board = readBoard();
+  for (const column of board.columns) {
+    const task = column.tasks.find(t => t.id === taskId);
+    if (task) return res.json(task.history || []);
+  }
+  res.status(404).json({ error: 'Task not found' });
+});
+
+// Archive/Unarchive task
+app.post('/api/tasks/:taskId/archive', requireAuth, (req, res) => {
+  const { taskId } = req.params;
+  const { archived } = req.body;
+  const board = readBoard();
+
+  let found = false;
+  for (const column of board.columns) {
+    const task = column.tasks.find(t => t.id === taskId);
+    if (task) {
+      task.archived = !!archived;
+      if (!task.history) task.history = [];
+      task.history.push({
+        type: archived ? 'archive' : 'restore',
+        columnTitle: column.title,
+        timestamp: new Date().toISOString()
+      });
+      found = true;
+      break;
+    }
+  }
+
+  if (found) {
+    saveBoard(board);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Task not found' });
+  }
+});
 app.post('/api/columns', requireAuth, (req, res) => {
   const { title } = req.body;
   const board = readBoard();
-  
+
   const newColumn = {
     id: Date.now().toString(),
     title,
-    tasks: []
+    tasks: [],
+    wipLimit: 0 // 0 means no limit
   };
-  
+
   board.columns.push(newColumn);
   saveBoard(board);
   res.json(newColumn);
@@ -118,10 +221,11 @@ app.put('/api/columns/:id', requireAuth, (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
   const board = readBoard();
-  
+
   const column = board.columns.find(col => col.id === id);
   if (column) {
-    column.title = title;
+    column.title = title || column.title;
+    if (req.body.wipLimit !== undefined) column.wipLimit = parseInt(req.body.wipLimit);
     saveBoard(board);
     res.json(column);
   } else {
@@ -132,7 +236,7 @@ app.put('/api/columns/:id', requireAuth, (req, res) => {
 app.delete('/api/columns/:id', requireAuth, (req, res) => {
   const { id } = req.params;
   const board = readBoard();
-  
+
   board.columns = board.columns.filter(col => col.id !== id);
   saveBoard(board);
   res.json({ success: true });
@@ -143,12 +247,12 @@ app.post('/api/columns/:columnId/tasks', requireAuth, (req, res) => {
   const { columnId } = req.params;
   const { title, description, priority, tags, deadline } = req.body;
   const board = readBoard();
-  
+
   const column = board.columns.find(col => col.id === columnId);
   if (!column) {
     return res.status(404).json({ error: 'Column not found' });
   }
-  
+
   const newTask = {
     id: Date.now().toString(),
     title,
@@ -156,10 +260,16 @@ app.post('/api/columns/:columnId/tasks', requireAuth, (req, res) => {
     priority: priority || 'medium',
     tags: tags || [],
     deadline: deadline || null,
+    deadline: deadline || null,
     subtasks: [],
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    history: [{
+      type: 'create',
+      columnTitle: column.title,
+      timestamp: new Date().toISOString()
+    }]
   };
-  
+
   column.tasks.push(newTask);
   saveBoard(board);
   res.json(newTask);
@@ -169,7 +279,7 @@ app.put('/api/tasks/:taskId', requireAuth, (req, res) => {
   const { taskId } = req.params;
   const updates = req.body;
   const board = readBoard();
-  
+
   let taskFound = false;
   for (const column of board.columns) {
     const task = column.tasks.find(t => t.id === taskId);
@@ -179,7 +289,7 @@ app.put('/api/tasks/:taskId', requireAuth, (req, res) => {
       break;
     }
   }
-  
+
   if (taskFound) {
     saveBoard(board);
     res.json({ success: true });
@@ -191,11 +301,11 @@ app.put('/api/tasks/:taskId', requireAuth, (req, res) => {
 app.delete('/api/tasks/:taskId', requireAuth, (req, res) => {
   const { taskId } = req.params;
   const board = readBoard();
-  
+
   for (const column of board.columns) {
     column.tasks = column.tasks.filter(t => t.id !== taskId);
   }
-  
+
   saveBoard(board);
   res.json({ success: true });
 });
@@ -205,7 +315,7 @@ app.post('/api/tasks/:taskId/move', requireAuth, (req, res) => {
   const { taskId } = req.params;
   const { targetColumnId } = req.body;
   const board = readBoard();
-  
+
   let task = null;
   for (const column of board.columns) {
     const taskIndex = column.tasks.findIndex(t => t.id === taskId);
@@ -214,9 +324,31 @@ app.post('/api/tasks/:taskId/move', requireAuth, (req, res) => {
       break;
     }
   }
-  
+
   const targetColumn = board.columns.find(col => col.id === targetColumnId);
   if (task && targetColumn) {
+    if (!task.history) task.history = [];
+
+    // Track StartedAt (first move from first column)
+    if (!task.startedAt && board.columns[0].id !== targetColumnId) {
+      task.startedAt = new Date().toISOString();
+    }
+
+    // Track CompletedAt (move to Done column)
+    if (targetColumn.title.toLowerCase().includes('done')) {
+      task.completedAt = new Date().toISOString();
+    } else {
+      task.completedAt = null;
+    }
+
+    task.history.push({
+      type: 'move',
+      from: task.lastColumnTitle || 'Unknown',
+      to: targetColumn.title,
+      timestamp: new Date().toISOString()
+    });
+
+    task.lastColumnTitle = targetColumn.title;
     targetColumn.tasks.push(task);
     saveBoard(board);
     res.json({ success: true });
@@ -230,7 +362,7 @@ app.post('/api/tasks/:taskId/subtasks', requireAuth, (req, res) => {
   const { taskId } = req.params;
   const { title } = req.body;
   const board = readBoard();
-  
+
   for (const column of board.columns) {
     const task = column.tasks.find(t => t.id === taskId);
     if (task) {
@@ -244,7 +376,7 @@ app.post('/api/tasks/:taskId/subtasks', requireAuth, (req, res) => {
       return res.json(newSubtask);
     }
   }
-  
+
   res.status(404).json({ error: 'Task not found' });
 });
 
@@ -252,7 +384,7 @@ app.put('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
   const { subtaskId } = req.params;
   const updates = req.body;
   const board = readBoard();
-  
+
   let found = false;
   for (const column of board.columns) {
     for (const task of column.tasks) {
@@ -265,7 +397,7 @@ app.put('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
     }
     if (found) break;
   }
-  
+
   if (found) {
     saveBoard(board);
     res.json({ success: true });
@@ -277,13 +409,13 @@ app.put('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
 app.delete('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
   const { subtaskId } = req.params;
   const board = readBoard();
-  
+
   for (const column of board.columns) {
     for (const task of column.tasks) {
       task.subtasks = task.subtasks.filter(st => st.id !== subtaskId);
     }
   }
-  
+
   saveBoard(board);
   res.json({ success: true });
 });
