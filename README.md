@@ -36,6 +36,20 @@
 ### Требования
 - Node.js (версия 16 или выше)
 
+#### Как установить Node.js на Linux (ручной способ):
+**Для Debian/Ubuntu/DietPi:**
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+**Через NVM (рекомендуется):**
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc
+nvm install 20
+```
+
 ### Быстрая установка (через скрипт)
 Вы можете установить приложение одной командой, которая автоматически скачает и запустит установщик:
 
