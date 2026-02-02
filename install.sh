@@ -66,23 +66,41 @@ while true; do
     fi
 done
 
-# 3. Подготовка директории
-if [ "$target_dir" != "$(pwd)" ]; then
-    echo -e "${BLUE}Создание директории: $target_dir...${NC}"
-    if [ ! -d "$target_dir" ]; then
-        mkdir -p "$target_dir" || sudo mkdir -p "$target_dir"
+# 3. Подготовка и получение файлов
+echo -e "${BLUE}Подготовка директории: $target_dir...${NC}"
+if [ ! -d "$target_dir" ]; then
+    mkdir -p "$target_dir" || sudo mkdir -p "$target_dir"
+fi
+
+# Проверяем, есть ли файлы проекта локально или нужно их скачать
+SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+if [ -f "$SOURCE_DIR/package.json" ]; then
+    # Локальная установка (файлы уже есть)
+    if [ "$target_dir" != "$SOURCE_DIR" ]; then
+        echo -e "${BLUE}Копирование файлов из $SOURCE_DIR...${NC}"
+        cp -r "$SOURCE_DIR/public" "$target_dir/"
+        cp "$SOURCE_DIR/package.json" "$target_dir/"
+        cp "$SOURCE_DIR/server.js" "$target_dir/"
+        cp "$SOURCE_DIR/README.md" "$target_dir/"
     fi
-    # Меняем владельца только если это не текущая папка пользователя
-    if [ ! -w "$target_dir" ]; then
-        sudo chown "$USER" "$target_dir"
+else
+    # Удаленная установка (запуск через curl)
+    echo -e "${BLUE}Файлы проекта не найдены локально. Загрузка из GitHub...${NC}"
+    if ! command -v git &> /dev/null; then
+        echo -e "${BLUE}Установка git...${NC}"
+        sudo apt-get update && sudo apt-get install -y git
     fi
     
-    echo -e "${BLUE}Копирование файлов...${NC}"
-    SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-    cp -r "$SOURCE_DIR/public" "$target_dir/" 2>/dev/null || cp -r "./public" "$target_dir/"
-    cp "$SOURCE_DIR/package.json" "$target_dir/" 2>/dev/null || cp "./package.json" "$target_dir/"
-    cp "$SOURCE_DIR/server.js" "$target_dir/" 2>/dev/null || cp "./server.js" "$target_dir/"
-    cp "$SOURCE_DIR/README.md" "$target_dir/" 2>/dev/null || cp "./README.md" "$target_dir/"
+    # Клонируем в временную папку, а потом переносим содержимое в target_dir
+    # Или клонируем прямо в неё, если она пуста
+    if [ -z "$(ls -A "$target_dir")" ]; then
+        git clone https://github.com/iwizard7/KanBe.git "$target_dir"
+    else
+        temp_clone_dir=$(mktemp -d)
+        git clone https://github.com/iwizard7/KanBe.git "$temp_clone_dir"
+        cp -r "$temp_clone_dir/." "$target_dir/"
+        rm -rf "$temp_clone_dir"
+    fi
 fi
 
 cd "$target_dir"
