@@ -34,7 +34,6 @@ function updateThemeIcon(theme) {
 // Initialize app
 async function init() {
     initTheme();
-    initBackground();
     const authCheck = await fetch('/api/check-auth');
     const { authenticated } = await authCheck.json();
 
@@ -52,22 +51,7 @@ function setupEventListeners() {
     // Login form
     document.getElementById('login-form').addEventListener('submit', handleLogin);
 
-    // Background picker
-    document.getElementById('bg-picker-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('bg-options').classList.toggle('hidden');
-    });
-
-    document.querySelectorAll('.bg-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            const bg = opt.dataset.bg;
-            setBackground(bg);
-            document.getElementById('bg-options').classList.add('hidden');
-        });
-    });
-
     document.addEventListener('click', () => {
-        document.getElementById('bg-options').classList.add('hidden');
     });
 
     // Logout
@@ -322,31 +306,7 @@ function celebrateConfetti() {
     }, 250);
 }
 
-// Background management
-const backgrounds = {
-    default: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
-    sunset: 'linear-gradient(135deg, #4c1d95 0%, #db2777 100%)',
-    ocean: 'linear-gradient(135deg, #1e3a8a 0%, #0891b2 100%)',
-    forest: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)',
-    minimal: '#111827'
-};
-
-function initBackground() {
-    const savedBg = localStorage.getItem('board-bg') || 'default';
-    setBackground(savedBg);
-}
-
-function setBackground(bgName) {
-    const bgValue = backgrounds[bgName] || backgrounds.default;
-    document.body.style.background = bgValue;
-    document.body.style.backgroundAttachment = 'fixed';
-    localStorage.setItem('board-bg', bgName);
-
-    // Update active state in picker
-    document.querySelectorAll('.bg-option').forEach(opt => {
-        opt.classList.toggle('active', opt.dataset.bg === bgName);
-    });
-}
+// Background management (REMOVED)
 
 function createColumnElement(column) {
     const columnEl = document.createElement('div');
