@@ -149,7 +149,28 @@ if [ "$is_update" = false ]; then
     " "$app_password"
 fi
 
-# 7. Определение IP адреса
+# 7. Запуск приложения в фоне через PM2
+echo -e "${BLUE}Настройка автозапуска в фоне...${NC}"
+
+# Проверяем наличие PM2
+if ! command -v pm2 &> /dev/null; then
+    echo -e "${BLUE}Установка PM2 для управления фоновыми процессами...${NC}"
+    sudo npm install -g pm2 || npm install -g pm2
+fi
+
+# Запуск или перезапуск приложения
+if pm2 show kanbe &> /dev/null; then
+    echo -e "${BLUE}Перезапуск существующего процесса kanbe...${NC}"
+    pm2 restart kanbe
+else
+    echo -e "${BLUE}Запуск нового процесса kanbe...${NC}"
+    pm2 start server.js --name kanbe
+fi
+
+# Сохраняем список процессов для автозапуска после перезагрузки сервера
+pm2 save &> /dev/null || true
+
+# 8. Определение IP адреса
 if [[ "$OSTYPE" == "darwin"* ]]; then
     IP_ADDR=$(ipconfig getifaddr en0 || echo "localhost")
 else
@@ -164,10 +185,12 @@ else
 fi
 echo -e "${GREEN}=======================================${NC}"
 echo -e "Директория: ${BLUE}$target_dir${NC}"
+echo -e "Статус: ${BLUE}Приложение запущено в фоне (PM2)${NC}"
 echo
-echo -e "Чтобы запустить приложение:"
-echo -e "  cd $target_dir"
-echo -e "  npm start"
+echo -e "Полезные команды PM2:"
+echo -e "  pm2 logs kanbe    - Просмотр логов"
+echo -e "  pm2 status        - Статус процессов"
+echo -e "  pm2 restart kanbe - Ручной перезапуск"
 echo
 echo -e "Адрес приложения: ${BLUE}http://$IP_ADDR:3000${NC}"
 echo -e "======================================="
