@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# KanBe Installer
-# This script installs the KanBe Kanban board on a Linux server.
+# KanBe Installer v2.1
+# Поддерживает Linux и macOS
 
 set -e
 
-# Colors for output
+# Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -15,26 +15,27 @@ echo -e "${BLUE}=======================================${NC}"
 echo -e "${BLUE}       KanBe - Kanban Installer        ${NC}"
 echo -e "${BLUE}=======================================${NC}"
 
-# Check for Node.js
+# Проверка Node.js
 if ! command -v node &> /dev/null; then
-    echo -e "${RED}Error: Node.js is not installed.${NC}"
-    echo "Please install Node.js first (e.g., sudo apt install nodejs)"
+    echo -e "${RED}Ошибка: Node.js не установлен.${NC}"
+    echo "Пожалуйста, установите Node.js (https://nodejs.org/)"
     exit 1
 fi
 
-# Check for npm
+# Проверка npm
 if ! command -v npm &> /dev/null; then
-    echo -e "${RED}Error: npm is not installed.${NC}"
-    echo "Please install npm first (e.g., sudo apt install npm)"
+    echo -e "${RED}Ошибка: npm не установлен.${NC}"
     exit 1
 fi
 
-# 1. Ask for installation directory
-default_dir="/opt/kanbe"
-read -p "Введите путь для установки [$default_dir]: " target_dir
+# 1. Выбор директории
+# По умолчанию используем текущую рабочую директорию
+default_dir=$(pwd)
+echo -e "Путь по умолчанию: ${BLUE}$default_dir${NC}"
+read -p "Введите путь для установки (Enter для текущей папки): " target_dir
 target_dir=${target_dir:-$default_dir}
 
-# 2. Ask for password
+# 2. Запрос пароля
 while true; do
     read -s -p "Введите пароль для входа в приложение: " app_password
     echo
@@ -47,49 +48,62 @@ while true; do
     fi
 done
 
-# 3. Create directory
-echo -e "${BLUE}Создание директории: $target_dir...${NC}"
-sudo mkdir -p "$target_dir"
-sudo chown "$USER:$USER" "$target_dir"
-
-# 4. Copy files
-echo -e "${BLUE}Копирование файлов...${NC}"
-# Get the directory where the script is located
-SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-
-cp -r "$SOURCE_DIR/public" "$target_dir/"
-cp "$SOURCE_DIR/package.json" "$target_dir/"
-cp "$SOURCE_DIR/server.js" "$target_dir/"
-cp "$SOURCE_DIR/README.md" "$target_dir/"
-
-# Create .env file if it doesn't exist
-if [ ! -f "$target_dir/.env" ]; then
-    echo -e "${BLUE}Создание .env файла...${NC}"
-    echo "PORT=3000" > "$target_dir/.env"
-    echo "SESSION_SECRET=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)" >> "$target_dir/.env"
-    echo "NODE_ENV=production" >> "$target_dir/.env"
-    echo "BACKUP_DAYS=7" >> "$target_dir/.env"
+# 3. Подготовка директории
+if [ "$target_dir" != "$(pwd)" ]; then
+    echo -e "${BLUE}Создание директории: $target_dir...${NC}"
+    if [ ! -d "$target_dir" ]; then
+        mkdir -p "$target_dir" || sudo mkdir -p "$target_dir"
+    fi
+    # Меняем владельца только если это не текущая папка пользователя
+    if [ ! -w "$target_dir" ]; then
+        sudo chown "$USER" "$target_dir"
+    fi
+    
+    echo -e "${BLUE}Копирование файлов...${NC}"
+    SOURCE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+    cp -r "$SOURCE_DIR/public" "$target_dir/" 2>/dev/null || cp -r "./public" "$target_dir/"
+    cp "$SOURCE_DIR/package.json" "$target_dir/" 2>/dev/null || cp "./package.json" "$target_dir/"
+    cp "$SOURCE_DIR/server.js" "$target_dir/" 2>/dev/null || cp "./server.js" "$target_dir/"
+    cp "$SOURCE_DIR/README.md" "$target_dir/" 2>/dev/null || cp "./README.md" "$target_dir/"
 fi
 
 cd "$target_dir"
 
-# 5. Install dependencies
-echo -e "${BLUE}Установка зависимостей (это может занять время)...${NC}"
+# 4. Создание .env файла
+if [ ! -f ".env" ]; then
+    echo -e "${BLUE}Создание .env файла...${NC}"
+    echo "PORT=3000" > ".env"
+    # Генерация секрета через node (кроссплатформенно)
+    SESSION_SECRET=$(node -e "printf(require('crypto').randomBytes(16).toString('hex'))" 2>/dev/null || echo "kanbe-secret-$(date +%s)")
+    echo "SESSION_SECRET=$SESSION_SECRET" >> ".env"
+    echo "NODE_ENV=production" >> ".env"
+    echo "BACKUP_DAYS=7" >> ".env"
+fi
+
+# 5. Установка зависимостей
+echo -e "${BLUE}Установка зависимостей...${NC}"
 npm install --production
 
-# 6. Set up the password
+# 6. Настройка пароля
 echo -e "${BLUE}Настройка пароля...${NC}"
 mkdir -p data
-# Use a temporary node script to hash the password and create config.json
+# Используем временный node-скрипт для хеширования пароля
 node -e "
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
-const password = '$app_password';
+const password = process.argv[1];
 const hash = bcrypt.hashSync(password, 10);
 const config = { passwordHash: hash };
 fs.writeFileSync(path.join('data', 'config.json'), JSON.stringify(config, null, 2));
-"
+" "$app_password"
+
+# 7. Определение IP адреса
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    IP_ADDR=$(ipconfig getifaddr en0 || echo "localhost")
+else
+    IP_ADDR=$(hostname -I | awk '{print $1}' || echo "localhost")
+fi
 
 echo -e "${GREEN}=======================================${NC}"
 echo -e "${GREEN}      Установка успешно завершена!      ${NC}"
@@ -98,12 +112,7 @@ echo -e "Приложение установлено в: ${BLUE}$target_dir${NC}
 echo
 echo -e "Чтобы запустить приложение:"
 echo -e "  cd $target_dir"
-echo -e "  node server.js"
+echo -e "  npm start"
 echo
-echo -e "Рекомендуется использовать PM2 для постоянной работы:"
-echo -e "  sudo npm install -g pm2"
-echo -e "  pm2 start server.js --name kanbe"
-echo -e "  pm2 save"
-echo
-echo -e "Приложение будет доступно по адресу: ${BLUE}http://$(hostname -I | awk '{print $1}'):3000${NC}"
+echo -e "Приложение будет доступно по адресу: ${BLUE}http://$IP_ADDR:3000${NC}"
 echo -e "======================================="
