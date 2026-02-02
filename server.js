@@ -11,6 +11,14 @@ const cron = require('node-cron');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Persistent session storage
+const FileStore = require('session-file-store')(session);
+const DATA_DIR = path.join(__dirname, 'data');
+const SESSIONS_DIR = path.join(DATA_DIR, 'sessions');
+
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
+if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR);
+
 // Security: Rate limiting for login
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -25,6 +33,11 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(session({
+  store: new FileStore({
+    path: SESSIONS_DIR,
+    ttl: 24 * 60 * 60, // 1 day
+    retries: 0
+  }),
   secret: process.env.SESSION_SECRET || 'kanban-fallback-secret',
   resave: false,
   saveUninitialized: false,
@@ -36,14 +49,12 @@ app.use(session({
   }
 }));
 
-// Data directories
-const DATA_DIR = path.join(__dirname, 'data');
+// Data files
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 const BOARD_FILE = path.join(DATA_DIR, 'board.json');
 
 // Initialize data directories
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
 
 // Initialize config file
