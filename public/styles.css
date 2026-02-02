@@ -502,6 +502,12 @@ body {
   border-radius: 4px;
 }
 
+.recurring-icon {
+  font-size: 12px;
+  opacity: 0.8;
+  cursor: help;
+}
+
 /* Urgent Deadline Pulse */
 .task-card.urgent {
   border-color: rgba(239, 68, 68, 0.4);

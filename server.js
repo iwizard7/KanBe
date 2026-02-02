@@ -89,6 +89,78 @@ function createBackup() {
   });
 }
 
+// Helper to check and generate recurring tasks
+function processRecurringTasks() {
+  const board = readBoard();
+  const today = new Date().toISOString().split('T')[0];
+  let boardChanged = false;
+
+  board.columns.forEach(column => {
+    column.tasks.forEach(task => {
+      if (task.recurring && task.recurring.frequency !== 'none') {
+        const lastRun = task.recurring.lastRun || '1970-01-01';
+        let shouldRun = false;
+
+        const lastDate = new Date(lastRun);
+        const currentDate = new Date(today);
+        const diffTime = Math.abs(currentDate - lastDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (task.recurring.frequency === 'daily' && diffDays >= 1) {
+          shouldRun = true;
+        } else if (task.recurring.frequency === 'weekly' && diffDays >= 7) {
+          shouldRun = true;
+        }
+
+        if (shouldRun) {
+          // Create copy in the first column
+          const newTask = {
+            ...task,
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+            createdAt: new Date().toISOString(),
+            history: [{
+              type: 'create',
+              columnTitle: board.columns[0].title,
+              timestamp: new Date().toISOString(),
+              note: 'Recurring task generated'
+            }],
+            startedAt: null,
+            completedAt: null,
+            archived: false,
+            recurring: { ...task.recurring, lastRun: today } // Don't let the copy be recurring source unless intended? 
+            // Better: copy is NOT recurring, or source maintains the state.
+          };
+          
+          // Actually, usually the source task itself is the "template".
+          // We update the template's lastRun and add a new instance.
+          task.recurring.lastRun = today;
+          
+          // Important: the new instance should NOT have a recurring setting to avoid cascading multiples, 
+          // OR it stays as is and we just track the template. 
+          // Let's make the NEW instance a regular task.
+          delete newTask.recurring; 
+
+          board.columns[0].tasks.push(newTask);
+          boardChanged = true;
+          console.log(`Generated recurring task: ${task.title}`);
+        }
+      }
+    });
+  });
+
+  if (boardChanged) {
+    saveBoard(board);
+  }
+}
+
+// Schedule daily check for recurring tasks at 00:05
+cron.schedule('5 0 * * *', () => {
+  processRecurringTasks();
+});
+
+// Also check on server start
+processRecurringTasks();
+
 // Schedule daily backup at midnight
 cron.schedule('0 0 * * *', () => {
   createBackup();

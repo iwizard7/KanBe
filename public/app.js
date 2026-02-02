@@ -1,6 +1,7 @@
 // Global state
 let boardData = null;
 let currentEditingTask = null;
+let currentEditingTaskData = null;
 let currentEditingColumn = null;
 let sortables = {
     tasks: [],
@@ -427,6 +428,7 @@ function createTaskElement(task, columnId) {
     <div class="task-header">
       <div class="task-title" onclick="openEditTaskModal('${task.id}', '${columnId}')">${escapeHtml(task.title)}</div>
       <div style="display: flex; gap: 4px; align-items: center;">
+        ${task.recurring && task.recurring.frequency !== 'none' ? `<span class="recurring-icon" title="Повторяющаяся: ${task.recurring.frequency}">🔁</span>` : ''}
         ${cycleTimeHtml}
         <button class="btn-icon-small" onclick="openHistoryModal('${task.id}')">📜</button>
         <span class="priority-badge priority-${task.priority}">${getPriorityText(task.priority)}</span>
@@ -563,6 +565,7 @@ function openAddTaskModal(columnId) {
     document.getElementById('task-priority').value = 'medium';
     document.getElementById('task-tags').value = '';
     document.getElementById('task-deadline').value = '';
+    document.getElementById('task-recurring').value = 'none';
     document.getElementById('subtasks-container').innerHTML = '';
     document.getElementById('subtasks-container').innerHTML = '';
     document.getElementById('archive-task-btn').classList.add('hidden');
@@ -577,6 +580,7 @@ function openEditTaskModal(taskId, columnId) {
 
     currentEditingTask = taskId;
     currentEditingColumn = columnId;
+    currentEditingTaskData = task;
 
     document.getElementById('modal-title').textContent = 'Редактировать задачу';
     document.getElementById('task-title').value = task.title;
@@ -584,6 +588,7 @@ function openEditTaskModal(taskId, columnId) {
     document.getElementById('task-priority').value = task.priority;
     document.getElementById('task-tags').value = task.tags ? task.tags.join(', ') : '';
     document.getElementById('task-deadline').value = task.deadline || '';
+    document.getElementById('task-recurring').value = (task.recurring && task.recurring.frequency) || 'none';
 
     // Render subtasks
     const subtasksContainer = document.getElementById('subtasks-container');
@@ -600,6 +605,7 @@ function openEditTaskModal(taskId, columnId) {
 function closeTaskModal() {
     document.getElementById('task-modal').classList.add('hidden');
     currentEditingTask = null;
+    currentEditingTaskData = null;
     currentEditingColumn = null;
 }
 
@@ -633,7 +639,11 @@ async function handleTaskSubmit(e) {
         priority,
         tags,
         deadline: deadline || null,
-        subtasks
+        subtasks,
+        recurring: {
+            frequency: document.getElementById('task-recurring').value,
+            lastRun: currentEditingTask ? (currentEditingTaskData?.recurring?.lastRun || null) : null
+        }
     };
 
     if (currentEditingTask) {
