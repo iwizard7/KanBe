@@ -46,11 +46,9 @@ const BOARD_FILE = path.join(DATA_DIR, 'board.json');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
 
-// Initialize config file with default password "admin"
+// Initialize config file
 if (!fs.existsSync(CONFIG_FILE)) {
-  const defaultPassword = bcrypt.hashSync('admin', 10);
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify({ passwordHash: defaultPassword }, null, 2));
-  console.log('Default password set to: admin');
+  console.log('Warning: No config file found. Please run install.sh or set a password manually in data/config.json');
 }
 
 // Initialize board file
@@ -130,15 +128,15 @@ function processRecurringTasks() {
             recurring: { ...task.recurring, lastRun: today } // Don't let the copy be recurring source unless intended? 
             // Better: copy is NOT recurring, or source maintains the state.
           };
-          
+
           // Actually, usually the source task itself is the "template".
           // We update the template's lastRun and add a new instance.
           task.recurring.lastRun = today;
-          
+
           // Important: the new instance should NOT have a recurring setting to avoid cascading multiples, 
           // OR it stays as is and we just track the template. 
           // Let's make the NEW instance a regular task.
-          delete newTask.recurring; 
+          delete newTask.recurring;
 
           board.columns[0].tasks.push(newTask);
           boardChanged = true;
@@ -495,5 +493,4 @@ app.delete('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Kanban server running on http://localhost:${PORT}`);
-  console.log('Default password: admin');
 });
