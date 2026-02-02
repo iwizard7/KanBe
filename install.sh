@@ -21,7 +21,8 @@ if ! command -v node &> /dev/null; then
     
     # Пытаемся предложить авто-установку для Debian/Ubuntu систем
     if command -v apt-get &> /dev/null; then
-        read -p "Желаете установить Node.js автоматически? (y/n): " install_node
+        echo -e "${BLUE}Обнаружена система на базе Debian/Ubuntu.${NC}"
+        read -p "Желаете установить Node.js автоматически? (y/n): " install_node < /dev/tty
         if [[ $install_node == "y" || $install_node == "Y" ]]; then
             echo -e "${BLUE}Установка Node.js...${NC}"
             sudo apt-get update
@@ -49,14 +50,14 @@ fi
 # По умолчанию используем текущую рабочую директорию
 default_dir=$(pwd)
 echo -e "Путь по умолчанию: ${BLUE}$default_dir${NC}"
-read -p "Введите путь для установки (Enter для текущей папки): " target_dir
+read -p "Введите путь для установки (Enter для текущей папки): " target_dir < /dev/tty
 target_dir=${target_dir:-$default_dir}
 
 # 2. Запрос пароля
 while true; do
-    read -s -p "Введите пароль для входа в приложение: " app_password
+    read -s -p "Введите пароль для входа в приложение: " app_password < /dev/tty
     echo
-    read -s -p "Повторите пароль: " app_password_confirm
+    read -s -p "Повторите пароль: " app_password_confirm < /dev/tty
     echo
     if [ "$app_password" == "$app_password_confirm" ]; then
         break
