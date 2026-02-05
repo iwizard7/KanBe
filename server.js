@@ -398,9 +398,11 @@ app.post('/api/tasks/:taskId/move', requireAuth, (req, res) => {
   const board = readBoard();
 
   let task = null;
+  let sourceColumnTitle = '';
   for (const column of board.columns) {
     const taskIndex = column.tasks.findIndex(t => t.id === taskId);
     if (taskIndex !== -1) {
+      sourceColumnTitle = column.title;
       task = column.tasks.splice(taskIndex, 1)[0];
       break;
     }
@@ -424,12 +426,11 @@ app.post('/api/tasks/:taskId/move', requireAuth, (req, res) => {
 
     task.history.push({
       type: 'move',
-      from: task.lastColumnTitle || 'Unknown',
+      from: sourceColumnTitle,
       to: targetColumn.title,
       timestamp: new Date().toISOString()
     });
 
-    task.lastColumnTitle = targetColumn.title;
     targetColumn.tasks.push(task);
     saveBoard(board);
     res.json({ success: true });
