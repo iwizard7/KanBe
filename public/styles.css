@@ -435,14 +435,17 @@ body {
 
 /* Empty State */
 .column-tasks:empty::after {
-  content: '☕️ Пока пусто...';
-  display: block;
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-secondary);
-  font-size: 14px;
-  opacity: 0.6;
-  font-style: italic;
+  content: '󱔗';
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  color: var(--text-muted);
+  opacity: 0.4;
+  margin: 10px;
 }
 
 .column-tasks::-webkit-scrollbar {
@@ -462,24 +465,74 @@ body {
   background: var(--primary);
 }
 
+/* Inline Add Task */
+.quick-add-container {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.quick-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-add-input {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.quick-add-input:focus {
+  border-color: var(--primary);
+  background: var(--bg-hover);
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1);
+}
+
+.quick-add-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.quick-add-form.active .quick-add-actions {
+  opacity: 1;
+  height: auto;
+  margin-top: 4px;
+}
+
 .add-task-btn {
   width: 100%;
-  padding: 12px;
+  padding: 10px;
   background: transparent;
-  border: 2px dashed var(--border);
-  border-radius: 12px;
-  color: var(--text-secondary);
-  font-size: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .add-task-btn:hover {
+  border-style: solid;
   border-color: var(--primary);
   color: var(--primary);
-  background: rgba(102, 126, 234, 0.05);
+  background: rgba(129, 140, 248, 0.05);
 }
 
 /* Task Card */
@@ -571,27 +624,29 @@ body {
   flex: 1;
 }
 
+/* Minimalist Priority Marks */
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 8px currentColor;
+}
+
 .priority-badge {
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
 }
 
 .priority-low {
-  background: rgba(72, 187, 120, 0.2);
   color: var(--priority-low);
 }
 
 .priority-medium {
-  background: rgba(237, 137, 54, 0.2);
   color: var(--priority-medium);
 }
 
 .priority-high {
-  background: rgba(245, 101, 101, 0.2);
   color: var(--priority-high);
 }
 
@@ -983,18 +1038,20 @@ body {
 
 /* SortableJS Styles */
 .sortable-ghost {
-  opacity: 0.4;
-  background: var(--bg-hover) !important;
-  border: 2px dashed var(--primary) !important;
+  opacity: 0.2;
+  background: var(--primary) !important;
+  border: 2px solid var(--primary) !important;
+  border-radius: 16px;
 }
 
 .sortable-chosen {
-  transform: rotate(2deg);
-  box-shadow: 0 15px 25px rgba(0, 0, 0, 0.2);
+  transform: rotate(2deg) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  cursor: grabbing;
 }
 
 .sortable-drag {
-  cursor: grabbing;
+  opacity: 0;
 }
 
 @media (max-width: 768px) {

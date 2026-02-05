@@ -60,6 +60,9 @@ function setupEventListeners() {
     // Theme toggle
     document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
 
+    // Add Column
+    document.getElementById('add-column-btn').addEventListener('click', openAddColumnModal);
+
     // Search
     document.getElementById('search-input').addEventListener('input', (e) => {
         searchText = e.target.value.toLowerCase();
@@ -321,9 +324,15 @@ function createColumnElement(column) {
       </div>
     </div>
     <div class="column-tasks" id="tasks-${column.id}"></div>
-    <button class="add-task-btn" onclick="openAddTaskModal('${column.id}')">
-      + Добавить задачу
-    </button>
+    <div class="quick-add-container">
+      <form class="quick-add-form" onsubmit="handleQuickTaskSubmit(event, '${column.id}')">
+        <input type="text" class="quick-add-input" placeholder="+ Добавить задачу..." onfocus="this.parentElement.classList.add('active')" onblur="setTimeout(() => !this.value && this.parentElement.classList.remove('active'), 200)">
+        <div class="quick-add-actions">
+          <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 12px; width: auto;">Добавить</button>
+          <button type="button" class="btn-text" style="padding: 6px 12px; font-size: 12px;" onclick="this.closest('.quick-add-form').classList.remove('active')">Отмена</button>
+        </div>
+      </form>
+    </div>
   `;
 
     const tasksContainer = columnEl.querySelector('.column-tasks');
@@ -387,11 +396,13 @@ function createTaskElement(task, columnId) {
     taskEl.innerHTML = `
     <div class="task-header">
       <div class="task-title" onclick="openEditTaskModal('${task.id}', '${columnId}')">${escapeHtml(task.title)}</div>
-      <div style="display: flex; gap: 4px; align-items: center;">
+      <div style="display: flex; gap: 8px; align-items: center;">
         ${task.recurring && task.recurring.frequency !== 'none' ? `<span class="recurring-icon" title="Повторяющаяся: ${task.recurring.frequency}">🔁</span>` : ''}
         ${cycleTimeHtml}
-        <button class="btn-icon-small" onclick="openHistoryModal('${task.id}')">📜</button>
-        <span class="priority-badge priority-${task.priority}">${getPriorityText(task.priority)}</span>
+        <button class="btn-icon-small" onclick="event.stopPropagation(); openHistoryModal('${task.id}')" title="История действий">🕒</button>
+        <span class="priority-badge" title="Приоритет: ${getPriorityText(task.priority)}">
+          <span class="priority-dot priority-${task.priority}"></span>
+        </span>
       </div>
     </div>
     ${task.description ? `<div class="task-description-preview">${descriptionHtml}</div>` : ''}
@@ -419,8 +430,40 @@ function createTaskElement(task, columnId) {
     </div>
   `;
 
-    taskEl.addEventListener('click', () => openEditTaskModal(task.id, columnId));
+    taskEl.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-icon-small') || e.target.closest('.recurring-icon')) return;
+        openEditTaskModal(task.id, columnId);
+    });
     return taskEl;
+}
+
+async function handleQuickTaskSubmit(e, columnId) {
+    e.preventDefault();
+    const input = e.target.querySelector('.quick-add-input');
+    const title = input.value.trim();
+    if (!title) return;
+
+    try {
+        const response = await fetch(`/api/columns/${columnId}/tasks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title,
+                description: '',
+                priority: 'medium',
+                tags: [],
+                subtasks: []
+            })
+        });
+
+        if (response.ok) {
+            input.value = '';
+            e.target.classList.remove('active');
+            loadBoard();
+        }
+    } catch (error) {
+        console.error('Quick add failed:', error);
+    }
 }
 
 // Column CRUD
