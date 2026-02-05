@@ -365,6 +365,22 @@ app.put('/api/tasks/:taskId', requireAuth, (req, res) => {
   for (const column of board.columns) {
     const task = column.tasks.find(t => t.id === taskId);
     if (task) {
+      if (!task.history) task.history = [];
+
+      // Compare subtasks for completion changes
+      if (updates.subtasks) {
+        updates.subtasks.forEach(newSt => {
+          const oldSt = task.subtasks.find(st => st.id === newSt.id);
+          if (oldSt && oldSt.completed !== newSt.completed) {
+            task.history.push({
+              type: newSt.completed ? 'subtask_done' : 'subtask_undone',
+              subtaskTitle: newSt.title,
+              timestamp: new Date().toISOString()
+            });
+          }
+        });
+      }
+
       Object.assign(task, updates);
       taskFound = true;
       break;
@@ -468,10 +484,17 @@ app.put('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
   const board = readBoard();
 
   let found = false;
+  let parentTask = null;
+  let oldSubtaskTitle = '';
+  let oldCompletedStatus = false;
+
   for (const column of board.columns) {
     for (const task of column.tasks) {
       const subtask = task.subtasks.find(st => st.id === subtaskId);
       if (subtask) {
+        parentTask = task;
+        oldSubtaskTitle = subtask.title;
+        oldCompletedStatus = subtask.completed;
         Object.assign(subtask, updates);
         found = true;
         break;
@@ -481,6 +504,27 @@ app.put('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
   }
 
   if (found) {
+    if (!parentTask.history) parentTask.history = [];
+
+    // Log completion/uncompletion
+    if (updates.hasOwnProperty('completed') && updates.completed !== oldCompletedStatus) {
+      parentTask.history.push({
+        type: updates.completed ? 'subtask_done' : 'subtask_undone',
+        subtaskTitle: oldSubtaskTitle,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Log rename
+    if (updates.title && updates.title !== oldSubtaskTitle) {
+      parentTask.history.push({
+        type: 'subtask_rename',
+        from: oldSubtaskTitle,
+        to: updates.title,
+        timestamp: new Date().toISOString()
+      });
+    }
+
     saveBoard(board);
     res.json({ success: true });
   } else {

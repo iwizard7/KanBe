@@ -27,6 +27,7 @@
 :root {
   /* Modern Premium Palette */
   --primary: #818cf8;
+  --primary-light: #a5b4fc;
   --primary-hover: #6366f1;
   --secondary: #fb7185;
   --accent: #38bdf8;
@@ -247,6 +248,10 @@ body {
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: white;
+  box-shadow: 0 4px 15px rgba(129, 140, 248, 0.2);
+}
+
+.btn-wide {
   width: 100%;
 }
 
@@ -624,20 +629,7 @@ body {
   flex: 1;
 }
 
-/* Minimalist Priority Marks */
-.priority-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  box-shadow: 0 0 8px currentColor;
-}
-
-.priority-badge {
-  display: flex;
-  align-items: center;
-}
-
+/* Priority Colors */
 .priority-low {
   color: var(--priority-low);
 }

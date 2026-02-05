@@ -460,9 +460,6 @@ function createTaskElement(task, columnId) {
         ${task.recurring && task.recurring.frequency !== 'none' ? `<span class="recurring-icon" title="Повторяющаяся: ${task.recurring.frequency}">🔁</span>` : ''}
         ${cycleTimeHtml}
         <button class="btn-icon-small" onclick="event.stopPropagation(); openHistoryModal('${task.id}')" title="История действий">🕒</button>
-        <span class="priority-badge" title="Приоритет: ${getPriorityText(task.priority)}">
-          <span class="priority-dot priority-${task.priority}"></span>
-        </span>
       </div>
     </div>
     ${task.description ? `<div class="task-description-preview">${descriptionHtml}</div>` : ''}
@@ -644,6 +641,9 @@ function getHistoryText(item) {
         case 'move': return `Перемещена из <b>${item.from}</b> в <b>${item.to}</b>`;
         case 'archive': return `Архивирована`;
         case 'restore': return `Восстановлена`;
+        case 'subtask_done': return `Подзадача <b>"${item.subtaskTitle}"</b> выполнена`;
+        case 'subtask_undone': return `Подзадача <b>"${item.subtaskTitle}"</b> возвращена в работу`;
+        case 'subtask_rename': return `Подзадача переименована из <b>"${item.from}"</b> в <b>"${item.to}"</b>`;
         default: return 'Действие выполнено';
     }
 }
@@ -682,6 +682,7 @@ function openAddTaskModal(columnId) {
     populateLinkSelector(null);
     document.getElementById('archive-task-btn').classList.add('hidden');
     document.getElementById('delete-task-btn').classList.add('hidden');
+    document.getElementById('modal-history-btn').classList.add('hidden');
     document.getElementById('task-modal').classList.remove('hidden');
 }
 
@@ -715,6 +716,7 @@ function openEditTaskModal(taskId, columnId) {
 
     document.getElementById('archive-task-btn').classList.remove('hidden');
     document.getElementById('delete-task-btn').classList.remove('hidden');
+    document.getElementById('modal-history-btn').classList.remove('hidden');
     document.getElementById('task-modal').classList.remove('hidden');
 }
 
