@@ -68,22 +68,23 @@
   --primary-light: #6366f1;
   --secondary: #db2777;
   --accent: #0891b2;
-  --bg-gradient-start: #f8fafc;
+  --bg-gradient-start: #f1f5f9;
+  /* Softer grey-blue */
   --bg-gradient-end: #e2e8f0;
-  --bg-dark: #ffffff;
+  --bg-dark: #f1f5f9;
   --bg-card: #ffffff;
-  --bg-hover: #f1f5f9;
+  --bg-hover: #e2e8f0;
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --border: #e2e8f0;
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
   --priority-low: #059669;
   --priority-medium: #d97706;
   --priority-high: #dc2626;
-  --input-bg: #f8fafc;
+  --input-bg: #ffffff;
   --input-border: #cbd5e1;
   --modal-bg: #ffffff;
-  --header-bg: rgba(255, 255, 255, 0.8);
+  --header-bg: rgba(241, 245, 249, 0.9);
 }
 
 body {
