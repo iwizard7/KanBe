@@ -102,6 +102,7 @@ else
         # Принудительно копируем (перезаписываем) всё кроме папок с данными
         echo -e "${BLUE}Применение обновлений...${NC}"
         cp -rf "$temp_clone_dir/public" "$target_dir/"
+        rm -rf "$target_dir/src" # Clean old src
         cp -rf "$temp_clone_dir/src" "$target_dir/"
         cp -f "$temp_clone_dir/package.json" "$target_dir/"
         cp -f "$temp_clone_dir/server.js" "$target_dir/"
@@ -114,6 +115,7 @@ else
         if [ "$target_dir" != "$SOURCE_DIR" ]; then
             echo -e "${BLUE}Копирование файлов...${NC}"
             cp -rf "$SOURCE_DIR/public" "$target_dir/"
+            rm -rf "$target_dir/src" # Clean old src
             cp -rf "$SOURCE_DIR/src" "$target_dir/"
             cp -f "$SOURCE_DIR/package.json" "$target_dir/"
             cp -f "$SOURCE_DIR/server.js" "$target_dir/"
@@ -165,9 +167,12 @@ if ! command -v pm2 &> /dev/null; then
 fi
 
 # Запуск или перезапуск приложения
+# Запуск или перезапуск приложения
 if pm2 show kanbe &> /dev/null; then
     echo -e "${BLUE}Перезапуск существующего процесса kanbe...${NC}"
-    pm2 restart kanbe
+    # Удаляем и создаем заново, чтобы подхватить новые пути и переменные
+    pm2 delete kanbe
+    pm2 start server.js --name kanbe
 else
     echo -e "${BLUE}Запуск нового процесса kanbe...${NC}"
     pm2 start server.js --name kanbe
