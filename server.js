@@ -7,17 +7,31 @@ const fs = require('fs');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
+const helmet = require('helmet');
+const morgan = require('morgan');
+
+// Custom Modules
+const logger = require('./src/utils/logger');
+const boardModel = require('./src/models/board.model');
+const backupService = require('./src/services/backup.service');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Persistent session storage
-const FileStore = require('session-file-store')(session);
+// Environment Validation
+if (!process.env.SESSION_SECRET) {
+  logger.warn('⚠️ SESSION_SECRET is not set. Using insecure default. Please set it in .env file.');
+}
+
+// Data Directories
 const DATA_DIR = path.join(__dirname, 'data');
 const SESSIONS_DIR = path.join(DATA_DIR, 'sessions');
+const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR);
+
+// Persistent session storage
+const FileStore = require('session-file-store')(session);
 
 // Security: Rate limiting for login
 const loginLimiter = rateLimit({
@@ -29,9 +43,14 @@ const loginLimiter = rateLimit({
 });
 
 // Middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled for simplicity with inline scripts/styles if any
+}));
+app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
+
 app.use(session({
   store: new FileStore({
     path: SESSIONS_DIR,
@@ -43,64 +62,39 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     maxAge: 24 * 60 * 60 * 1000,
-    secure: process.env.NODE_ENV === 'production' && false, // Set to true if using HTTPS
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'lax'
   }
 }));
 
-// Data files
-const BACKUP_DIR = path.join(DATA_DIR, 'backups');
-const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
-const BOARD_FILE = path.join(DATA_DIR, 'board.json');
-
-// Initialize data directories
-if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
-
-// Initialize config file
+// Initialize config file if needed
 if (!fs.existsSync(CONFIG_FILE)) {
-  console.log('Warning: No config file found. Please run install.sh or set a password manually in data/config.json');
+  logger.warn('No config file found. Please run install.sh or set a password manually in data/config.json');
 }
 
-// Initialize board file
-if (!fs.existsSync(BOARD_FILE)) {
-  const defaultBoard = {
-    columns: [
-      { id: '1', title: 'To Do', tasks: [] },
-      { id: '2', title: 'In Progress', tasks: [] },
-      { id: '3', title: 'Done', tasks: [] }
-    ]
-  };
-  fs.writeFileSync(BOARD_FILE, JSON.stringify(defaultBoard, null, 2));
-}
+// Scheduled Tasks
+// 1. Process recurring tasks daily at 00:05
+cron.schedule('5 0 * * *', () => {
+  try {
+    processRecurringTasks();
+  } catch (error) {
+    logger.error('Error processing recurring tasks', { error: error.message });
+  }
+});
 
-// Backup logic
-function createBackup() {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupPath = path.join(BACKUP_DIR, `board-backup-${timestamp}.json`);
-  fs.copyFileSync(BOARD_FILE, backupPath);
-  console.log(`Backup created: ${backupPath}`);
+// 2. Schedule daily backup at midnight
+cron.schedule('0 0 * * *', () => {
+  backupService.createBackup();
+});
 
-  // Clean old backups (keep last N days)
-  const keepDays = parseInt(process.env.BACKUP_DAYS) || 7;
-  const files = fs.readdirSync(BACKUP_DIR);
-  const now = Date.now();
+// Run recurring check on startup
+processRecurringTasks();
 
-  files.forEach(file => {
-    const filePath = path.join(BACKUP_DIR, file);
-    const stats = fs.statSync(filePath);
-    const ageInDays = (now - stats.mtimeMs) / (1000 * 60 * 60 * 24);
 
-    if (ageInDays > keepDays) {
-      fs.unlinkSync(filePath);
-      console.log(`Deleted old backup: ${file}`);
-    }
-  });
-}
-
-// Helper to check and generate recurring tasks
+// Helper Helper: Process Recurring Tasks
 function processRecurringTasks() {
-  const board = readBoard();
+  const board = boardModel.read();
   const today = new Date().toISOString().split('T')[0];
   let boardChanged = false;
 
@@ -122,7 +116,6 @@ function processRecurringTasks() {
         }
 
         if (shouldRun) {
-          // Create copy in the first column
           const newTask = {
             ...task,
             id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
@@ -136,58 +129,31 @@ function processRecurringTasks() {
             startedAt: null,
             completedAt: null,
             archived: false,
-            recurring: { ...task.recurring, lastRun: today } // Don't let the copy be recurring source unless intended? 
-            // Better: copy is NOT recurring, or source maintains the state.
+            recurring: { ...task.recurring, lastRun: today }
           };
 
-          // Actually, usually the source task itself is the "template".
-          // We update the template's lastRun and add a new instance.
+          // Update template lastRun
           task.recurring.lastRun = today;
 
-          // Important: the new instance should NOT have a recurring setting to avoid cascading multiples, 
-          // OR it stays as is and we just track the template. 
-          // Let's make the NEW instance a regular task.
+          // New instance is regular task
           delete newTask.recurring;
 
           board.columns[0].tasks.push(newTask);
           boardChanged = true;
-          console.log(`Generated recurring task: ${task.title}`);
+          logger.info(`Generated recurring task: ${task.title}`);
         }
       }
     });
   });
 
   if (boardChanged) {
-    saveBoard(board);
+    boardModel.save(board);
   }
 }
 
-// Schedule daily check for recurring tasks at 00:05
-cron.schedule('5 0 * * *', () => {
-  processRecurringTasks();
-});
-
-// Also check on server start
-processRecurringTasks();
-
-// Schedule daily backup at midnight
-cron.schedule('0 0 * * *', () => {
-  createBackup();
-});
-
-// Helper functions (same as before but with backup on save)
 function readConfig() {
   return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
 }
-
-function readBoard() {
-  return JSON.parse(fs.readFileSync(BOARD_FILE, 'utf8'));
-}
-
-function saveBoard(board) {
-  fs.writeFileSync(BOARD_FILE, JSON.stringify(board, null, 2));
-}
-
 
 // Authentication middleware
 function requireAuth(req, res, next) {
@@ -201,13 +167,20 @@ function requireAuth(req, res, next) {
 // Routes - Authentication
 app.post('/api/login', loginLimiter, (req, res) => {
   const { password } = req.body;
-  const config = readConfig();
 
-  if (bcrypt.compareSync(password, config.passwordHash)) {
-    req.session.authenticated = true;
-    res.json({ success: true });
-  } else {
-    res.status(401).json({ error: 'Invalid password' });
+  try {
+    const config = readConfig();
+    if (bcrypt.compareSync(password, config.passwordHash)) {
+      req.session.authenticated = true;
+      logger.info('User logged in successfully');
+      res.json({ success: true });
+    } else {
+      logger.warn('Failed login attempt');
+      res.status(401).json({ error: 'Invalid password' });
+    }
+  } catch (error) {
+    logger.error('Login error', { error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -222,17 +195,16 @@ app.get('/api/check-auth', (req, res) => {
 
 // Routes - Board
 app.get('/api/board', requireAuth, (req, res) => {
-  const board = readBoard();
-  // Filter out archived tasks for the main board view
+  const board = boardModel.read();
+  // Filter out archived tasks
   board.columns.forEach(column => {
     column.tasks = column.tasks.filter(t => !t.archived);
   });
   res.json(board);
 });
 
-// GET archived tasks
 app.get('/api/tasks/archived', requireAuth, (req, res) => {
-  const board = readBoard();
+  const board = boardModel.read();
   const archivedTasks = [];
   board.columns.forEach(column => {
     column.tasks.forEach(task => {
@@ -242,10 +214,9 @@ app.get('/api/tasks/archived', requireAuth, (req, res) => {
   res.json(archivedTasks);
 });
 
-// GET task history
 app.get('/api/tasks/:taskId/history', requireAuth, (req, res) => {
   const { taskId } = req.params;
-  const board = readBoard();
+  const board = boardModel.read();
   for (const column of board.columns) {
     const task = column.tasks.find(t => t.id === taskId);
     if (task) return res.json(task.history || []);
@@ -253,11 +224,10 @@ app.get('/api/tasks/:taskId/history', requireAuth, (req, res) => {
   res.status(404).json({ error: 'Task not found' });
 });
 
-// Archive/Unarchive task
 app.post('/api/tasks/:taskId/archive', requireAuth, (req, res) => {
   const { taskId } = req.params;
   const { archived } = req.body;
-  const board = readBoard();
+  const board = boardModel.read();
 
   let found = false;
   for (const column of board.columns) {
@@ -276,38 +246,39 @@ app.post('/api/tasks/:taskId/archive', requireAuth, (req, res) => {
   }
 
   if (found) {
-    saveBoard(board);
+    boardModel.save(board);
     res.json({ success: true });
   } else {
     res.status(404).json({ error: 'Task not found' });
   }
 });
+
 app.post('/api/columns', requireAuth, (req, res) => {
   const { title } = req.body;
-  const board = readBoard();
+  const board = boardModel.read();
 
   const newColumn = {
     id: Date.now().toString(),
     title,
     tasks: [],
-    wipLimit: 0 // 0 means no limit
+    wipLimit: 0
   };
 
   board.columns.push(newColumn);
-  saveBoard(board);
+  boardModel.save(board);
   res.json(newColumn);
 });
 
 app.put('/api/columns/:id', requireAuth, (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
-  const board = readBoard();
+  const board = boardModel.read();
 
   const column = board.columns.find(col => col.id === id);
   if (column) {
     column.title = title || column.title;
     if (req.body.wipLimit !== undefined) column.wipLimit = parseInt(req.body.wipLimit);
-    saveBoard(board);
+    boardModel.save(board);
     res.json(column);
   } else {
     res.status(404).json({ error: 'Column not found' });
@@ -316,18 +287,17 @@ app.put('/api/columns/:id', requireAuth, (req, res) => {
 
 app.delete('/api/columns/:id', requireAuth, (req, res) => {
   const { id } = req.params;
-  const board = readBoard();
+  const board = boardModel.read();
 
   board.columns = board.columns.filter(col => col.id !== id);
-  saveBoard(board);
+  boardModel.save(board);
   res.json({ success: true });
 });
 
-// Routes - Tasks
 app.post('/api/columns/:columnId/tasks', requireAuth, (req, res) => {
   const { columnId } = req.params;
   const { title, description, priority, tags, deadline, subtasks, recurring } = req.body;
-  const board = readBoard();
+  const board = boardModel.read();
 
   const column = board.columns.find(col => col.id === columnId);
   if (!column) {
@@ -352,14 +322,14 @@ app.post('/api/columns/:columnId/tasks', requireAuth, (req, res) => {
   };
 
   column.tasks.push(newTask);
-  saveBoard(board);
+  boardModel.save(board);
   res.json(newTask);
 });
 
 app.put('/api/tasks/:taskId', requireAuth, (req, res) => {
   const { taskId } = req.params;
   const updates = req.body;
-  const board = readBoard();
+  const board = boardModel.read();
 
   let taskFound = false;
   for (const column of board.columns) {
@@ -367,7 +337,6 @@ app.put('/api/tasks/:taskId', requireAuth, (req, res) => {
     if (task) {
       if (!task.history) task.history = [];
 
-      // Compare subtasks for completion changes
       if (updates.subtasks) {
         updates.subtasks.forEach(newSt => {
           const oldSt = task.subtasks.find(st => st.id === newSt.id);
@@ -388,7 +357,7 @@ app.put('/api/tasks/:taskId', requireAuth, (req, res) => {
   }
 
   if (taskFound) {
-    saveBoard(board);
+    boardModel.save(board);
     res.json({ success: true });
   } else {
     res.status(404).json({ error: 'Task not found' });
@@ -397,21 +366,20 @@ app.put('/api/tasks/:taskId', requireAuth, (req, res) => {
 
 app.delete('/api/tasks/:taskId', requireAuth, (req, res) => {
   const { taskId } = req.params;
-  const board = readBoard();
+  const board = boardModel.read();
 
   for (const column of board.columns) {
     column.tasks = column.tasks.filter(t => t.id !== taskId);
   }
 
-  saveBoard(board);
+  boardModel.save(board);
   res.json({ success: true });
 });
 
-// Move task between columns
 app.post('/api/tasks/:taskId/move', requireAuth, (req, res) => {
   const { taskId } = req.params;
   const { targetColumnId } = req.body;
-  const board = readBoard();
+  const board = boardModel.read();
 
   let task = null;
   let sourceColumnTitle = '';
@@ -428,12 +396,10 @@ app.post('/api/tasks/:taskId/move', requireAuth, (req, res) => {
   if (task && targetColumn) {
     if (!task.history) task.history = [];
 
-    // Track StartedAt (first move from first column)
     if (!task.startedAt && board.columns[0].id !== targetColumnId) {
       task.startedAt = new Date().toISOString();
     }
 
-    // Track CompletedAt (move to Done column)
     if (targetColumn.title.toLowerCase().includes('done')) {
       task.completedAt = new Date().toISOString();
     } else {
@@ -448,18 +414,17 @@ app.post('/api/tasks/:taskId/move', requireAuth, (req, res) => {
     });
 
     targetColumn.tasks.push(task);
-    saveBoard(board);
+    boardModel.save(board);
     res.json({ success: true });
   } else {
     res.status(404).json({ error: 'Task or column not found' });
   }
 });
 
-// Routes - Subtasks
 app.post('/api/tasks/:taskId/subtasks', requireAuth, (req, res) => {
   const { taskId } = req.params;
   const { title } = req.body;
-  const board = readBoard();
+  const board = boardModel.read();
 
   for (const column of board.columns) {
     const task = column.tasks.find(t => t.id === taskId);
@@ -470,7 +435,7 @@ app.post('/api/tasks/:taskId/subtasks', requireAuth, (req, res) => {
         completed: false
       };
       task.subtasks.push(newSubtask);
-      saveBoard(board);
+      boardModel.save(board);
       return res.json(newSubtask);
     }
   }
@@ -481,7 +446,7 @@ app.post('/api/tasks/:taskId/subtasks', requireAuth, (req, res) => {
 app.put('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
   const { subtaskId } = req.params;
   const updates = req.body;
-  const board = readBoard();
+  const board = boardModel.read();
 
   let found = false;
   let parentTask = null;
@@ -506,7 +471,6 @@ app.put('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
   if (found) {
     if (!parentTask.history) parentTask.history = [];
 
-    // Log completion/uncompletion
     if (updates.hasOwnProperty('completed') && updates.completed !== oldCompletedStatus) {
       parentTask.history.push({
         type: updates.completed ? 'subtask_done' : 'subtask_undone',
@@ -515,7 +479,6 @@ app.put('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
       });
     }
 
-    // Log rename
     if (updates.title && updates.title !== oldSubtaskTitle) {
       parentTask.history.push({
         type: 'subtask_rename',
@@ -525,16 +488,15 @@ app.put('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
       });
     }
 
-    saveBoard(board);
+    boardModel.save(board);
     res.json({ success: true });
   } else {
     res.status(404).json({ error: 'Subtask not found' });
   }
 });
 
-// Backup/Restore
 app.get('/api/backup/export', requireAuth, (req, res) => {
-  const board = readBoard();
+  const board = boardModel.read();
   const date = new Date().toISOString().split('T')[0];
   res.setHeader('Content-disposition', `attachment; filename=kanbe-backup-${date}.json`);
   res.setHeader('Content-type', 'application/json');
@@ -547,17 +509,18 @@ app.post('/api/backup/import', requireAuth, (req, res) => {
     if (!board.columns || !Array.isArray(board.columns)) {
       return res.status(400).json({ error: 'Некорректный формат данных' });
     }
-    createBackup(); // Создаем бэкап перед перезаписью
-    saveBoard(board);
+    backupService.createBackup();
+    boardModel.save(board);
     res.json({ success: true });
   } catch (e) {
+    logger.error('Import error', { error: e.message });
     res.status(500).json({ error: 'Ошибка при восстановлении' });
   }
 });
 
 app.delete('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
   const { subtaskId } = req.params;
-  const board = readBoard();
+  const board = boardModel.read();
 
   for (const column of board.columns) {
     for (const task of column.tasks) {
@@ -565,11 +528,12 @@ app.delete('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
     }
   }
 
-  saveBoard(board);
+  boardModel.save(board);
   res.json({ success: true });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Kanban server running on http://localhost:${PORT}`);
+  logger.info(`Kanban server running on http://localhost:${PORT}`);
+  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
