@@ -326,7 +326,7 @@ app.delete('/api/columns/:id', requireAuth, (req, res) => {
 // Routes - Tasks
 app.post('/api/columns/:columnId/tasks', requireAuth, (req, res) => {
   const { columnId } = req.params;
-  const { title, description, priority, tags, deadline } = req.body;
+  const { title, description, priority, tags, deadline, subtasks, recurring } = req.body;
   const board = readBoard();
 
   const column = board.columns.find(col => col.id === columnId);
@@ -341,8 +341,8 @@ app.post('/api/columns/:columnId/tasks', requireAuth, (req, res) => {
     priority: priority || 'medium',
     tags: tags || [],
     deadline: deadline || null,
-    deadline: deadline || null,
-    subtasks: [],
+    subtasks: subtasks || [],
+    recurring: recurring || { frequency: 'none', lastRun: null },
     createdAt: new Date().toISOString(),
     history: [{
       type: 'create',
