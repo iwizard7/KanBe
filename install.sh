@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# KanBe Installer v2.1
+# KanBe Installer v2.2
 # Поддерживает Linux и macOS
 
 set -e
@@ -54,7 +54,7 @@ target_dir=${target_dir:-$default_dir}
 
 # Проверяем, существует ли уже установка
 is_update=false
-if [ -f "$target_dir/data/config.json" ] && [ -f "$target_dir/.env" ]; then
+if [ -f "$target_dir/data/config.json" ] || [ -f "$target_dir/.env" ]; then
     is_update=true
     echo -e "${GREEN}Обнаружена существующая установка. Режим обновления.${NC}"
 fi
@@ -88,32 +88,32 @@ if [ -d "$target_dir/.git" ] && command -v git &> /dev/null; then
     cd "$target_dir"
     git pull
 else
-    # Если файлов нет локально и это не git - скачиваем
-    if [ ! -f "$SOURCE_DIR/package.json" ]; then
-        echo -e "${BLUE}Загрузка файлов из GitHub...${NC}"
+    # Если файлов нет локально или обновление не через git
+    if [ ! -f "$SOURCE_DIR/package.json" ] || [ "$is_update" = true ]; then
+        echo -e "${BLUE}Загрузка актуальных файлов из GitHub...${NC}"
         if ! command -v git &> /dev/null; then
             echo -e "${BLUE}Установка git...${NC}"
             sudo apt-get update && sudo apt-get install -y git
         fi
         
         temp_clone_dir=$(mktemp -d)
-        git clone https://github.com/iwizard7/KanBe.git "$temp_clone_dir"
+        git clone --depth 1 https://github.com/iwizard7/KanBe.git "$temp_clone_dir"
         
-        # Копируем всё кроме папки data и .env если они есть
-        echo -e "${BLUE}Копирование файлов...${NC}"
-        cp -r "$temp_clone_dir/public" "$target_dir/"
-        cp "$temp_clone_dir/package.json" "$target_dir/"
-        cp "$temp_clone_dir/server.js" "$target_dir/"
-        cp "$temp_clone_dir/README.md" "$target_dir/"
+        # Принудительно копируем (перезаписываем) всё кроме папок с данными
+        echo -e "${BLUE}Применение обновлений...${NC}"
+        cp -rf "$temp_clone_dir/public" "$target_dir/"
+        cp -f "$temp_clone_dir/package.json" "$target_dir/"
+        cp -f "$temp_clone_dir/server.js" "$target_dir/"
+        cp -f "$temp_clone_dir/README.md" "$target_dir/"
         rm -rf "$temp_clone_dir"
     else
-        # Локальное копирование (если запускаем из папки с исходниками)
+        # Локальное копирование (если запускаем из папки с исходниками вручную)
         if [ "$target_dir" != "$SOURCE_DIR" ]; then
             echo -e "${BLUE}Копирование файлов...${NC}"
-            cp -r "$SOURCE_DIR/public" "$target_dir/"
-            cp "$SOURCE_DIR/package.json" "$target_dir/"
-            cp "$SOURCE_DIR/server.js" "$target_dir/"
-            cp "$SOURCE_DIR/README.md" "$target_dir/"
+            cp -rf "$SOURCE_DIR/public" "$target_dir/"
+            cp -f "$SOURCE_DIR/package.json" "$target_dir/"
+            cp -f "$SOURCE_DIR/server.js" "$target_dir/"
+            cp -f "$SOURCE_DIR/README.md" "$target_dir/"
         fi
     fi
 fi
