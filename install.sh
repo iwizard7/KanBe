@@ -104,7 +104,9 @@ else
         cp -rf "$temp_clone_dir/public" "$target_dir/"
         cp -f "$temp_clone_dir/package.json" "$target_dir/"
         cp -f "$temp_clone_dir/server.js" "$target_dir/"
+        cp -f "$temp_clone_dir/reset-password.js" "$target_dir/"
         cp -f "$temp_clone_dir/README.md" "$target_dir/"
+        chmod +x "$target_dir/reset-password.js"
         rm -rf "$temp_clone_dir"
     else
         # Локальное копирование (если запускаем из папки с исходниками вручную)
@@ -113,7 +115,9 @@ else
             cp -rf "$SOURCE_DIR/public" "$target_dir/"
             cp -f "$SOURCE_DIR/package.json" "$target_dir/"
             cp -f "$SOURCE_DIR/server.js" "$target_dir/"
+            cp -f "$SOURCE_DIR/reset-password.js" "$target_dir/"
             cp -f "$SOURCE_DIR/README.md" "$target_dir/"
+            chmod +x "$target_dir/reset-password.js"
         fi
     fi
 fi
