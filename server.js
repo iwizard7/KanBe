@@ -488,6 +488,29 @@ app.put('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
   }
 });
 
+// Backup/Restore
+app.get('/api/backup/export', requireAuth, (req, res) => {
+  const board = readBoard();
+  const date = new Date().toISOString().split('T')[0];
+  res.setHeader('Content-disposition', `attachment; filename=kanbe-backup-${date}.json`);
+  res.setHeader('Content-type', 'application/json');
+  res.send(JSON.stringify(board, null, 2));
+});
+
+app.post('/api/backup/import', requireAuth, (req, res) => {
+  try {
+    const board = req.body;
+    if (!board.columns || !Array.isArray(board.columns)) {
+      return res.status(400).json({ error: 'Некорректный формат данных' });
+    }
+    createBackup(); // Создаем бэкап перед перезаписью
+    saveBoard(board);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Ошибка при восстановлении' });
+  }
+});
+
 app.delete('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
   const { subtaskId } = req.params;
   const board = readBoard();

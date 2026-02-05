@@ -49,6 +49,7 @@
       <div class="header-right">
         <button id="theme-toggle-btn" class="btn-icon" title="Переключить тему">🌙</button>
         <button id="show-archive-btn" class="btn-icon" title="Архив">📦</button>
+        <button id="show-settings-btn" class="btn-icon" title="Настройки">⚙️</button>
         <button id="add-column-btn" class="btn-secondary">+ Добавить колонку</button>
         <button id="logout-btn" class="btn-icon" title="Выйти">🚪</button>
       </div>
@@ -107,6 +108,17 @@
         <div class="form-group">
           <label>Тэги (через запятую)</label>
           <input type="text" id="task-tags" placeholder="frontend, bug, urgent">
+        </div>
+
+        <div class="form-group">
+          <label>Связи (блокирует задачи)</label>
+          <div id="task-links-container" class="task-links-list"></div>
+          <div class="link-selector">
+            <select id="link-task-id">
+              <option value="">Выберите задачу для связи...</option>
+            </select>
+            <button type="button" class="btn-text" onclick="addTaskLink()">+ Связать</button>
+          </div>
         </div>
 
         <div class="form-group">
@@ -172,6 +184,28 @@
       </div>
       <div class="archive-list" id="archive-list">
         <!-- Archived tasks will appear here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content modal-small">
+      <div class="modal-header">
+        <h2>Настройки системы</h2>
+        <button class="btn-close" onclick="closeSettingsModal()">×</button>
+      </div>
+      <div class="settings-body">
+        <section class="settings-section">
+          <h3>📦 Резервное копирование</h3>
+          <p class="hint">Полный дамп доски в формате JSON. Полезно для переноса данных.</p>
+          <div class="settings-btns">
+            <button onclick="exportBoard()" class="btn-secondary">📥 Экспорт данных</button>
+            <button onclick="document.getElementById('import-input').click()" class="btn-secondary">📤
+              Восстановить</button>
+            <input type="file" id="import-input" hidden accept=".json" onchange="importBoard(event)">
+          </div>
+        </section>
       </div>
     </div>
   </div>

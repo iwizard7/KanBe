@@ -3,11 +3,51 @@ let boardData = null;
 let currentEditingTask = null;
 let currentEditingTaskData = null;
 let currentEditingColumn = null;
+let currentTaskLinks = []; // IDs of tasks that this task blocks
 let sortables = {
     tasks: [],
     columns: null
 };
 let searchText = '';
+
+// Sound Manager (Auditory UI)
+const SoundManager = {
+    audioContext: null,
+    init() {
+        if (this.audioContext) return;
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    },
+    playMove() {
+        this.init();
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, this.audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, this.audioContext.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+        osc.start();
+        osc.stop(this.audioContext.currentTime + 0.1);
+    },
+    playComplete() {
+        this.init();
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, this.audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1000, this.audioContext.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+        osc.start();
+        osc.stop(this.audioContext.currentTime + 0.3);
+    }
+};
 
 // Theme management
 function initTheme() {
@@ -62,6 +102,9 @@ function setupEventListeners() {
 
     // Add Column
     document.getElementById('add-column-btn').addEventListener('click', openAddColumnModal);
+
+    // Settings
+    document.getElementById('show-settings-btn').addEventListener('click', openSettingsModal);
 
     // Search
     document.getElementById('search-input').addEventListener('input', (e) => {
@@ -273,12 +316,16 @@ function initSortable() {
                     body: JSON.stringify({ targetColumnId })
                 });
 
+                // Sound Effect
+                SoundManager.playMove();
+
                 // Reload board to sync clean state
                 await loadBoard();
 
                 // Celebration if moved to Done
                 const targetColumn = boardData.columns.find(c => c.id === targetColumnId);
                 if (targetColumn && targetColumn.title.toLowerCase().includes('done')) {
+                    SoundManager.playComplete();
                     celebrateConfetti();
                 }
             }
@@ -393,10 +440,23 @@ function createTaskElement(task, columnId) {
         taskEl.classList.add('urgent');
     }
 
+    // Calculate dependencies
+    let depHtml = '<div class="dep-badges">';
+    if (task.links && task.links.blockedBy && task.links.blockedBy.length > 0) {
+        depHtml += `<span class="dep-badge is-blocked" title="Блокируется другими задачами">🔗 Блокирован</span>`;
+    }
+    const blockingCount = boardData.columns.reduce((count, col) => {
+        return count + col.tasks.filter(t => t.links && t.links.blockedBy && t.links.blockedBy.includes(task.id)).length;
+    }, 0);
+    if (blockingCount > 0) {
+        depHtml += `<span class="dep-badge is-blocking" title="Блокирует другие задачи">⛓️ Блокирует (${blockingCount})</span>`;
+    }
+    depHtml += '</div>';
+
     taskEl.innerHTML = `
     <div class="task-header">
       <div class="task-title" onclick="openEditTaskModal('${task.id}', '${columnId}')">${escapeHtml(task.title)}</div>
-      <div style="display: flex; gap: 8px; align-items: center;">
+      <div style="flex-shrink: 0; display: flex; gap: 8px; align-items: center;">
         ${task.recurring && task.recurring.frequency !== 'none' ? `<span class="recurring-icon" title="Повторяющаяся: ${task.recurring.frequency}">🔁</span>` : ''}
         ${cycleTimeHtml}
         <button class="btn-icon-small" onclick="event.stopPropagation(); openHistoryModal('${task.id}')" title="История действий">🕒</button>
@@ -406,6 +466,7 @@ function createTaskElement(task, columnId) {
       </div>
     </div>
     ${task.description ? `<div class="task-description-preview">${descriptionHtml}</div>` : ''}
+    ${depHtml}
     ${totalSubtasks > 0 ? `
       <div class="progress-container">
         <div class="progress-bar" style="width: ${progressPercent}%"></div>
@@ -464,6 +525,52 @@ async function handleQuickTaskSubmit(e, columnId) {
     } catch (error) {
         console.error('Quick add failed:', error);
     }
+}
+
+// Maintenance (Backup/Restore)
+function openSettingsModal() {
+    document.getElementById('settings-modal').classList.remove('hidden');
+}
+
+function closeSettingsModal() {
+    document.getElementById('settings-modal').classList.add('hidden');
+}
+
+async function exportBoard() {
+    window.location.href = '/api/backup/export';
+}
+
+async function importBoard(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!confirm('Внимание! Все текущие данные доски будут заменены данными из файла. Продолжить?')) {
+        e.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const board = JSON.parse(event.target.result);
+            const response = await fetch('/api/backup/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(board)
+            });
+
+            if (response.ok) {
+                alert('Данные успешно восстановлены!');
+                location.reload();
+            } else {
+                const err = await response.json();
+                alert('Ошибка: ' + err.error);
+            }
+        } catch (err) {
+            alert('Не удалось прочитать файл. Убедитесь, что это корректный JSON.');
+        }
+    };
+    reader.readAsText(file);
 }
 
 // Column CRUD
@@ -561,6 +668,7 @@ async function deleteColumn() {
 function openAddTaskModal(columnId) {
     currentEditingTask = null;
     currentEditingColumn = columnId;
+    currentTaskLinks = [];
 
     document.getElementById('modal-title').textContent = 'Создать задачу';
     document.getElementById('task-title').value = '';
@@ -570,7 +678,8 @@ function openAddTaskModal(columnId) {
     document.getElementById('task-deadline').value = '';
     document.getElementById('task-recurring').value = 'none';
     document.getElementById('subtasks-container').innerHTML = '';
-    document.getElementById('subtasks-container').innerHTML = '';
+    document.getElementById('task-links-container').innerHTML = '';
+    populateLinkSelector(null);
     document.getElementById('archive-task-btn').classList.add('hidden');
     document.getElementById('delete-task-btn').classList.add('hidden');
     document.getElementById('task-modal').classList.remove('hidden');
@@ -584,6 +693,7 @@ function openEditTaskModal(taskId, columnId) {
     currentEditingTask = taskId;
     currentEditingColumn = columnId;
     currentEditingTaskData = task;
+    currentTaskLinks = task.links ? [...task.links.blockedBy] : [];
 
     document.getElementById('modal-title').textContent = 'Редактировать задачу';
     document.getElementById('task-title').value = task.title;
@@ -592,6 +702,9 @@ function openEditTaskModal(taskId, columnId) {
     document.getElementById('task-tags').value = task.tags ? task.tags.join(', ') : '';
     document.getElementById('task-deadline').value = task.deadline || '';
     document.getElementById('task-recurring').value = (task.recurring && task.recurring.frequency) || 'none';
+
+    renderTaskLinks();
+    populateLinkSelector(taskId);
 
     // Render subtasks
     const subtasksContainer = document.getElementById('subtasks-container');
@@ -646,6 +759,9 @@ async function handleTaskSubmit(e) {
         recurring: {
             frequency: document.getElementById('task-recurring').value,
             lastRun: currentEditingTask ? (currentEditingTaskData?.recurring?.lastRun || null) : null
+        },
+        links: {
+            blockedBy: currentTaskLinks
         }
     };
 
@@ -810,6 +926,63 @@ function formatDate(dateString) {
     }
 
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
+// Task Links Management
+function populateLinkSelector(excludeTaskId) {
+    const select = document.getElementById('link-task-id');
+    if (!select) return;
+    select.innerHTML = '<option value="">Выберите задачу для связи...</option>';
+
+    boardData.columns.forEach(column => {
+        column.tasks.forEach(task => {
+            if (task.id !== excludeTaskId && !currentTaskLinks.includes(task.id)) {
+                const option = document.createElement('option');
+                option.value = task.id;
+                option.textContent = `[${column.title}] ${task.title}`;
+                select.appendChild(option);
+            }
+        });
+    });
+}
+
+function addTaskLink() {
+    const select = document.getElementById('link-task-id');
+    const taskId = select.value;
+    if (!taskId) return;
+
+    currentTaskLinks.push(taskId);
+    renderTaskLinks();
+    populateLinkSelector(currentEditingTask);
+}
+
+function removeTaskLink(taskId) {
+    currentTaskLinks = currentTaskLinks.filter(id => id !== taskId);
+    renderTaskLinks();
+    populateLinkSelector(currentEditingTask);
+}
+
+function renderTaskLinks() {
+    const container = document.getElementById('task-links-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    currentTaskLinks.forEach(linkId => {
+        // Find task title
+        let taskTitle = 'Неизвестная задача';
+        boardData.columns.forEach(col => {
+            const t = col.tasks.find(tk => tk.id === linkId);
+            if (t) taskTitle = t.title;
+        });
+
+        const item = document.createElement('div');
+        item.className = 'task-link-item';
+        item.innerHTML = `
+            <span>⛓️ ${escapeHtml(taskTitle)}</span>
+            <span class="remove-link" onclick="removeTaskLink('${linkId}')">×</span>
+        `;
+        container.appendChild(item);
+    });
 }
 
 // Initialize on load

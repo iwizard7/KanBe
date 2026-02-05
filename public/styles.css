@@ -1139,3 +1139,102 @@ body {
   text-transform: uppercase;
   letter-spacing: 2px;
 }
+
+/* Task Links (Dependencies) */
+.task-links-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.task-link-item {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: fadeIn 0.3s ease;
+}
+
+.remove-link {
+  color: var(--priority-high);
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.link-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.link-selector select {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  padding: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+.dep-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.dep-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.dep-badge:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.dep-badge.is-blocked {
+  color: var(--priority-high);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.dep-badge.is-blocking {
+  color: var(--priority-low);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* Settings Modal */
+.settings-section {
+  padding: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-section:last-child {
+  border-bottom: none;
+}
+
+.settings-section h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-btns {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
