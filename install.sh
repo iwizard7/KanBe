@@ -102,6 +102,7 @@ else
         # Принудительно копируем (перезаписываем) всё кроме папок с данными
         echo -e "${BLUE}Применение обновлений...${NC}"
         cp -rf "$temp_clone_dir/public" "$target_dir/"
+        cp -rf "$temp_clone_dir/src" "$target_dir/"
         cp -f "$temp_clone_dir/package.json" "$target_dir/"
         cp -f "$temp_clone_dir/server.js" "$target_dir/"
         cp -f "$temp_clone_dir/reset-password.js" "$target_dir/"
@@ -113,6 +114,7 @@ else
         if [ "$target_dir" != "$SOURCE_DIR" ]; then
             echo -e "${BLUE}Копирование файлов...${NC}"
             cp -rf "$SOURCE_DIR/public" "$target_dir/"
+            cp -rf "$SOURCE_DIR/src" "$target_dir/"
             cp -f "$SOURCE_DIR/package.json" "$target_dir/"
             cp -f "$SOURCE_DIR/server.js" "$target_dir/"
             cp -f "$SOURCE_DIR/reset-password.js" "$target_dir/"
