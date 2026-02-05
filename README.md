@@ -87,6 +87,50 @@ chmod +x install.sh
 - `GET /api/tasks/archived` — Список архивных задач.
 - `GET /api/tasks/:taskId/history` — Лог действий задачи.
 
+
+## Восстановление пароля
+
+Если вы забыли пароль, но имеете доступ к серверу через SSH, есть несколько способов его сбросить:
+
+### Способ 1: Использовать скрипт сброса (рекомендуется)
+
+```bash
+# Показать справку
+node reset-password.js --help
+
+# Интерактивный режим (с запросом пароля)
+npm run reset-password
+# или
+node reset-password.js
+
+# Неинтерактивный режим (прямое указание пароля)
+node reset-password.js --password "your-new-password"
+```
+
+### Способ 2: Вручную через Node.js
+
+```bash
+node -e "const bcrypt = require('bcryptjs'); const fs = require('fs'); const hash = bcrypt.hashSync('admin', 10); fs.writeFileSync('data/config.json', JSON.stringify({passwordHash: hash}, null, 2)); console.log('✅ Пароль сброшен на: admin');"
+```
+
+### Способ 3: Редактировать config.json напрямую
+
+1. Сгенерируйте новый хеш:
+```bash
+node -e "console.log(require('bcryptjs').hashSync('your-password', 10))"
+```
+
+2. Вставьте полученный хеш в `data/config.json`:
+```json
+{
+  "passwordHash": "вставьте_хеш_здесь"
+}
+```
+
+3. Перезапустите приложение
+
+**⚠️ Важно**: После сброса пароля рекомендуется сменить его на более надежный через интерфейс приложения.
+
 ## Резервное копирование
 Бекапы создаются автоматически в `data/backups/`. Срок хранения настраивается в `.env` переменной `BACKUP_DAYS`.
 
