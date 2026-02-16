@@ -227,6 +227,25 @@ if [ "$is_update" = false ]; then
     " "$app_password"
 fi
 
+# 6.5. Маркировка версии (для отображения даты обновления в PM2)
+if [ -f "package.json" ]; then
+    node -e "
+    const fs = require('fs');
+    try {
+        const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+        const now = new Date();
+        // Format: YYYYMMDD-HHmm (e.g. 20260216-1755)
+        const dateStr = now.toISOString().replace(/T/, '-').replace(/:/g, '').slice(0, 13);
+        
+        // Remove old build tag if exists and append new one
+        const baseVer = pkg.version.split('-')[0];
+        pkg.version = \`\${baseVer}-\${dateStr}\`;
+        
+        fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+        console.log('\x1b[34m  🏷️  Версия сборки: ' + pkg.version + '\x1b[0m');
+    } catch (e) {}"
+fi
+
 # 7. Запуск приложения в фоне через PM2
 echo -e "${BLUE}Настройка автозапуска в фоне...${NC}"
 
