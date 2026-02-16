@@ -160,7 +160,7 @@ function requireAuth(req, res, next) {
   if (req.session.authenticated) {
     next();
   } else {
-    logger.warn(`Unauthorized access attempt to ${req.originalUrl}`);
+    logger.warn(`Unauthorized access attempt to ${req.originalUrl} from ${req.ip}`);
     res.status(401).json({ error: 'Unauthorized' });
   }
 }
@@ -173,10 +173,10 @@ app.post('/api/login', loginLimiter, (req, res) => {
     const config = readConfig();
     if (bcrypt.compareSync(password, config.passwordHash)) {
       req.session.authenticated = true;
-      logger.info('User logged in successfully');
+      logger.info(`User logged in successfully from ${req.ip}`);
       res.json({ success: true });
     } else {
-      logger.warn('Failed login attempt');
+      logger.warn(`Failed login attempt from ${req.ip}`);
       res.status(401).json({ error: 'Invalid password' });
     }
   } catch (error) {
