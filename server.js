@@ -160,6 +160,7 @@ function requireAuth(req, res, next) {
   if (req.session.authenticated) {
     next();
   } else {
+    logger.warn(`Unauthorized access attempt to ${req.originalUrl}`);
     res.status(401).json({ error: 'Unauthorized' });
   }
 }
