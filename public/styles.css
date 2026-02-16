@@ -440,17 +440,20 @@ body {
 
 /* Empty State */
 .column-tasks:empty::after {
-  content: '󱔗';
-  font-size: 24px;
+  content: 'Нет задач';
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 120px;
+  height: 80px;
   border: 2px dashed var(--border);
-  border-radius: 16px;
+  border-radius: 12px;
   color: var(--text-muted);
-  opacity: 0.4;
+  opacity: 0.6;
   margin: 10px;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .column-tasks::-webkit-scrollbar {
