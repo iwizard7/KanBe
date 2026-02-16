@@ -74,6 +74,43 @@ if [ "$is_update" = false ]; then
     done
 fi
 
+# 2.5. Выбор порта
+# 2.5. Выбор порта
+APP_PORT=3000
+if [ -f "$target_dir/.env" ]; then
+    EXISTING_PORT=$(grep "^PORT=" "$target_dir/.env" | cut -d '=' -f2)
+    if [ ! -z "$EXISTING_PORT" ]; then
+        APP_PORT=$EXISTING_PORT
+    fi
+fi
+
+while true; do
+    echo -e "Порт приложения по умолчанию: ${BLUE}$APP_PORT${NC}"
+    read -p "Введите порт (Enter для сохранения $APP_PORT): " input_port < /dev/tty
+    
+    if [ ! -z "$input_port" ]; then
+        APP_PORT=$input_port
+    fi
+
+    # Проверка на число
+    if ! [[ "$APP_PORT" =~ ^[0-9]+$ ]]; then
+        echo -e "${RED}Ошибка: Порт должен быть числом.${NC}"
+        continue
+    fi
+
+    # Проверка доступности порта через Node.js
+    if node -e 'require("net").createServer().listen(process.argv[1], () => { process.exit(0); }).on("error", () => { process.exit(1); })' "$APP_PORT"; then
+        break
+    else
+        echo -e "${RED}⚠️  Порт $APP_PORT занят другим приложением!${NC}"
+        read -p "Вы уверены, что хотите использовать этот порт? (y/n): " confirm_port < /dev/tty
+        if [[ $confirm_port == "y" || $confirm_port == "Y" ]]; then
+            break
+        fi
+        echo -e "Пожалуйста, выберите другой порт."
+    fi
+done
+
 # 3. Подготовка и получение файлов
 if [ ! -d "$target_dir" ]; then
     echo -e "${BLUE}Создание директории: $target_dir...${NC}"
@@ -129,13 +166,24 @@ fi
 cd "$target_dir"
 
 # 4. Создание .env файла (только если его нет)
+# 4. Настройка .env (или обновление порта)
 if [ ! -f ".env" ]; then
     echo -e "${BLUE}Создание .env файла...${NC}"
-    echo "PORT=3000" > ".env"
+    echo "PORT=$APP_PORT" > ".env"
     SESSION_SECRET=$(node -e "process.stdout.write(require('crypto').randomBytes(16).toString('hex'))" 2>/dev/null || echo "kanbe-secret-$(date +%s)")
     echo "SESSION_SECRET=$SESSION_SECRET" >> ".env"
     echo "NODE_ENV=production" >> ".env"
     echo "BACKUP_DAYS=7" >> ".env"
+else
+    # Обновляем порт в существующем файле
+    # Используем временный файл для безопасной замены
+    grep -v "^PORT=" ".env" > ".env.tmp" || true
+    echo "PORT=$APP_PORT" >> ".env.tmp"
+    
+    # Сохраняем остальные переменные, если они пропали (на всякий случай, хотя grep -v их оставит)
+    # Но проверим, не удалили ли мы чего лишнего. grep -v просто убирает строку.
+    
+    mv ".env.tmp" ".env"
 fi
 
 # 5. Установка зависимостей
@@ -203,5 +251,5 @@ echo -e "  pm2 logs kanbe    - Просмотр логов"
 echo -e "  pm2 status        - Статус процессов"
 echo -e "  pm2 restart kanbe - Ручной перезапуск"
 echo
-echo -e "Адрес приложения: ${BLUE}http://$IP_ADDR:3000${NC}"
+echo -e "Адрес приложения: ${BLUE}http://$IP_ADDR:$APP_PORT${NC}"
 echo -e "======================================="
