@@ -137,14 +137,36 @@ else
         git clone --depth 1 https://github.com/iwizard7/KanBe.git "$temp_clone_dir"
         
         # Принудительно копируем (перезаписываем) всё кроме папок с данными
-        echo -e "${BLUE}Применение обновлений...${NC}"
-        cp -rf "$temp_clone_dir/public" "$target_dir/"
-        rm -rf "$target_dir/src" # Clean old src
+        echo -e "${BLUE}Синхронизация файлов...${NC}"
+
+        # Функция для умного копирования с логами
+        copy_file_verbose() {
+            local src=$1
+            local dest=$2
+            local name=$3
+            if [ ! -f "$dest" ]; then
+                echo -e "  ✨ Новый файл: $name"
+                cp -f "$src" "$dest"
+            elif ! cmp -s "$src" "$dest"; then
+                echo -e "  📝 Обновлен: $name"
+                cp -f "$src" "$dest"
+            fi
+        }
+
+        # Sync directories
+        echo -e "  📂 Обновление ресурсов (public/)..."
+        cp -rf "$temp_clone_dir/public/"* "$target_dir/public/"
+        
+        echo -e "  📂 Обновление исходного кода (src/)..."
+        rm -rf "$target_dir/src"
         cp -rf "$temp_clone_dir/src" "$target_dir/"
-        cp -f "$temp_clone_dir/package.json" "$target_dir/"
-        cp -f "$temp_clone_dir/server.js" "$target_dir/"
-        cp -f "$temp_clone_dir/reset-password.js" "$target_dir/"
-        cp -f "$temp_clone_dir/README.md" "$target_dir/"
+
+        # Check individual files
+        copy_file_verbose "$temp_clone_dir/package.json" "$target_dir/package.json" "package.json"
+        copy_file_verbose "$temp_clone_dir/server.js" "$target_dir/server.js" "server.js"
+        copy_file_verbose "$temp_clone_dir/reset-password.js" "$target_dir/reset-password.js" "reset-password.js"
+        copy_file_verbose "$temp_clone_dir/README.md" "$target_dir/README.md" "README.md"
+
         chmod +x "$target_dir/reset-password.js"
         rm -rf "$temp_clone_dir"
     else
