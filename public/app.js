@@ -145,6 +145,7 @@ function setupEventListeners() {
 
     // Column form
     document.getElementById('column-form').addEventListener('submit', handleColumnSubmit);
+    document.getElementById('delete-column-btn').addEventListener('click', deleteColumn);
 
     // Task form
     document.getElementById('task-form').addEventListener('submit', handleTaskSubmit);
