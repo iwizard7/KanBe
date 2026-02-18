@@ -25,79 +25,96 @@
 }
 
 :root {
-  /* Modern Premium Palette */
-  --primary: #818cf8;
-  --primary-light: #a5b4fc;
-  --primary-hover: #6366f1;
-  --secondary: #fb7185;
-  --accent: #38bdf8;
+  /* Premium Nocturnal Palette */
+  --primary: #8b5cf6;
+  /* Vibrant Violet */
+  --primary-light: #a78bfa;
+  --primary-hover: #7c3aed;
+  --secondary: #ec4899;
+  /* Pink/Rose */
+  --accent: #22d3ee;
+  /* Cyan */
 
-  /* Deep Modern Backgrounds */
-  --bg-dark: #0b0f1a;
-  --bg-gradient-start: #0b0f1a;
-  --bg-gradient-end: #161b2c;
+  /* Deepest Modern Backgrounds */
+  --bg-dark: #030712;
+  --bg-gradient-start: #030712;
+  --bg-gradient-end: #111827;
 
-  /* Glass Surfaces */
-  --bg-card: rgba(21, 27, 41, 0.65);
-  --bg-hover: rgba(30, 41, 59, 0.8);
-  --header-bg: rgba(11, 15, 26, 0.85);
-  --modal-bg: #111827;
+  /* Refined Glass Surfaces */
+  --bg-card: rgba(17, 24, 39, 0.7);
+  --bg-hover: rgba(31, 41, 55, 0.85);
+  --header-bg: rgba(3, 7, 18, 0.8);
+  --modal-bg: #090e1a;
 
-  /* Refined Typography */
+  /* Elegant Typography */
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
 
-  /* Subtle Borders & Deep Shadows */
-  --border: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  /* Premium Borders & Shadows */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 30px 60px -12px rgba(0, 0, 0, 0.9);
 
-  /* Aesthetic Functional Colors */
-  --priority-low: #34d399;
-  --priority-medium: #fbbf24;
-  --priority-high: #f87171;
+  /* Functional Colors with Modern Hues */
+  --priority-low: #10b981;
+  --priority-medium: #f59e0b;
+  --priority-high: #ef4444;
 
-  --input-bg: rgba(15, 23, 42, 0.6);
-  --input-border: rgba(255, 255, 255, 0.08);
-  --task-card-bg: rgba(30, 41, 59, 0.4);
+  --input-bg: rgba(15, 23, 42, 0.8);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --task-card-bg: rgba(30, 41, 59, 0.5);
+  --column-bg: rgba(17, 24, 39, 0.4);
+
+  --body-bg: radial-gradient(circle at top right, #111827, #030712);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
 }
 
 /* Light Theme - Clean Soft Blue/Indigo */
+/* Light Theme - Clean Snow Prism Aesthetic */
 [data-theme="light"] {
   --primary: #4f46e5;
   --primary-light: #6366f1;
-  --secondary: #db2777;
-  --accent: #0891b2;
-  --bg-gradient-start: #f1f5f9;
-  /* Softer grey-blue */
-  --bg-gradient-end: #e2e8f0;
-  --bg-dark: #f1f5f9;
+  --primary-hover: #4338ca;
+  --secondary: #ec4899;
+  --accent: #06b6d4;
+  --bg-gradient-start: #f8fafc;
+  --bg-gradient-end: #ffffff;
+  --bg-dark: #f8fafc;
   --bg-card: #ffffff;
-  --bg-hover: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --border: #e2e8f0;
-  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
-  --priority-low: #059669;
-  --priority-medium: #d97706;
-  --priority-high: #dc2626;
-  --input-bg: #ffffff;
-  --input-border: #cbd5e1;
+  --bg-hover: rgba(241, 245, 249, 0.8);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border: #f1f5f9;
+  --border-strong: #e2e8f0;
+  --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.05);
+  --priority-low: #10b981;
+  --priority-medium: #f59e0b;
+  --priority-high: #ef4444;
+  --input-bg: #f8fafc;
+  --input-border: #e2e8f0;
   --modal-bg: #ffffff;
-  --header-bg: rgba(241, 245, 249, 0.9);
+  --header-bg: rgba(255, 255, 255, 0.9);
   --task-card-bg: #ffffff;
+  --column-bg: rgba(241, 245, 249, 0.6);
+  --body-bg: radial-gradient(circle at top right, #f8fafc, #edf2f7);
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--body-bg);
   background-attachment: fixed;
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1.6;
 }
 
 /* Animations */
@@ -153,15 +170,15 @@ body {
 
 .login-container {
   background: var(--bg-card);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   border: 1px solid var(--border-strong);
-  border-radius: 32px;
+  border-radius: 40px;
   padding: 48px;
   width: 100%;
   max-width: 440px;
   box-shadow: var(--shadow-lg);
-  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .login-logo {
@@ -176,9 +193,11 @@ body {
 }
 
 .login-logo h1 {
-  font-size: 32px;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--secondary), var(--accent));
+  font-family: 'Outfit', sans-serif;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -312,18 +331,20 @@ body {
 
 /* Header */
 .header {
+  height: 80px;
   background: var(--header-bg);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
+  padding: 0 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transition: background 0.3s ease;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .header-left,
@@ -371,16 +392,16 @@ body {
 .column {
   min-width: 340px;
   max-width: 340px;
-  background: rgba(17, 24, 39, 0.4);
+  background: var(--column-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 24px;
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 120px);
   box-shadow: var(--shadow);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .column:hover {
@@ -558,10 +579,10 @@ body {
 }
 
 .task-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-5px);
   background: var(--bg-hover);
-  border-color: var(--primary);
-  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.4);
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(139, 92, 246, 0.1);
 }
 
 /* Priority Borders */
