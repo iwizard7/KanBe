@@ -44,18 +44,7 @@ const loginLimiter = rateLimit({
 
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "cdn.jsdelivr.net", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "cdn.jsdelivr.net"],
-      fontSrc: ["'self'", "fonts.gstatic.com", "data:"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      upgradeInsecureRequests: null, // Critical: Allows HTTP resources on HTTP sites
-    },
-  },
-  hsts: false, // Critical: Disables Strict-Transport-Security which forces HTTPS
+  contentSecurityPolicy: false, // Disabled for simplicity with inline scripts/styles if any
 }));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 app.use(bodyParser.json());
