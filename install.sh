@@ -57,6 +57,12 @@ is_update=false
 if [ -f "$target_dir/data/config.json" ] || [ -f "$target_dir/.env" ]; then
     is_update=true
     echo -e "${GREEN}Обнаружена существующая установка. Режим обновления.${NC}"
+    
+    # Остановка сервиса перед обновлением (если PM2 установлен и процесс запущен)
+    if command -v pm2 &> /dev/null && pm2 show kanbe &> /dev/null; then
+        echo -e "${BLUE}Остановка текущего процесса kanbe для безопасного обновления...${NC}"
+        pm2 stop kanbe &> /dev/null || true
+    fi
 fi
 
 # 2. Запрос пароля (только для новой установки)
