@@ -510,8 +510,8 @@ function createTaskElement(task, columnId) {
 
     const isOverdue = task.deadline && new Date(task.deadline) < new Date();
 
-    // Render markdown description
-    const descriptionHtml = task.description ? marked.parse(task.description) : '';
+    // Render markdown description and sanitize it
+    const descriptionHtml = task.description ? DOMPurify.sanitize(marked.parse(task.description)) : '';
 
     const column = boardData.columns.find(c => c.id === columnId);
     const isDoneColumn = column && column.title.toLowerCase().includes('done');
@@ -728,13 +728,13 @@ async function openHistoryModal(taskId) {
 
 function getHistoryText(item) {
     switch (item.type) {
-        case 'create': return `Задача создана в колонке <b>${item.columnTitle}</b>`;
-        case 'move': return `Перемещена из <b>${item.from}</b> в <b>${item.to}</b>`;
+        case 'create': return `Задача создана в колонке <b>${escapeHtml(item.columnTitle)}</b>`;
+        case 'move': return `Перемещена из <b>${escapeHtml(item.from)}</b> в <b>${escapeHtml(item.to)}</b>`;
         case 'archive': return `Архивирована`;
         case 'restore': return `Восстановлена`;
-        case 'subtask_done': return `Подзадача <b>"${item.subtaskTitle}"</b> выполнена`;
-        case 'subtask_undone': return `Подзадача <b>"${item.subtaskTitle}"</b> возвращена в работу`;
-        case 'subtask_rename': return `Подзадача переименована из <b>"${item.from}"</b> в <b>"${item.to}"</b>`;
+        case 'subtask_done': return `Подзадача <b>"${escapeHtml(item.subtaskTitle)}"</b> выполнена`;
+        case 'subtask_undone': return `Подзадача <b>"${escapeHtml(item.subtaskTitle)}"</b> возвращена в работу`;
+        case 'subtask_rename': return `Подзадача переименована из <b>"${escapeHtml(item.from)}"</b> в <b>"${escapeHtml(item.to)}"</b>`;
         default: return 'Действие выполнено';
     }
 }

@@ -44,7 +44,16 @@ const loginLimiter = rateLimit({
 
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: false, // Disabled for simplicity with inline scripts/styles if any
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "cdn.jsdelivr.net", "'unsafe-inline'"], // unsafe-inline needed for some sortable/confetti logic if any, but ideally we'd use hashes/nonces
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+      fontSrc: ["'self'", "fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+    },
+  },
 }));
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 app.use(bodyParser.json());
