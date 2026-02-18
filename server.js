@@ -197,6 +197,8 @@ app.get('/api/check-auth', (req, res) => {
 // Routes - Board
 app.get('/api/board', requireAuth, (req, res) => {
   const board = boardModel.read();
+  // Ensure projects array exists (backward compatibility)
+  if (!board.projects) board.projects = [];
   // Filter out archived tasks
   board.columns.forEach(column => {
     column.tasks = column.tasks.filter(t => !t.archived);
@@ -297,7 +299,7 @@ app.delete('/api/columns/:id', requireAuth, (req, res) => {
 
 app.post('/api/columns/:columnId/tasks', requireAuth, (req, res) => {
   const { columnId } = req.params;
-  const { title, description, priority, tags, deadline, subtasks, recurring } = req.body;
+  const { title, description, priority, tags, deadline, subtasks, recurring, project } = req.body;
   const board = boardModel.read();
 
   const column = board.columns.find(col => col.id === columnId);
@@ -313,6 +315,7 @@ app.post('/api/columns/:columnId/tasks', requireAuth, (req, res) => {
     tags: tags || [],
     deadline: deadline || null,
     subtasks: subtasks || [],
+    project: project || null,
     recurring: recurring || { frequency: 'none', lastRun: null },
     createdAt: new Date().toISOString(),
     history: [{
@@ -528,6 +531,68 @@ app.delete('/api/subtasks/:subtaskId', requireAuth, (req, res) => {
       task.subtasks = task.subtasks.filter(st => st.id !== subtaskId);
     }
   }
+
+  boardModel.save(board);
+  res.json({ success: true });
+});
+
+// Routes - Projects
+app.get('/api/projects', requireAuth, (req, res) => {
+  const board = boardModel.read();
+  res.json(board.projects || []);
+});
+
+app.post('/api/projects', requireAuth, (req, res) => {
+  const { name, color } = req.body;
+  if (!name || !color) {
+    return res.status(400).json({ error: 'Name and color are required' });
+  }
+  const board = boardModel.read();
+  if (!board.projects) board.projects = [];
+
+  const newProject = {
+    id: Date.now().toString(),
+    name,
+    color
+  };
+
+  board.projects.push(newProject);
+  boardModel.save(board);
+  res.json(newProject);
+});
+
+app.put('/api/projects/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const { name, color } = req.body;
+  const board = boardModel.read();
+  if (!board.projects) board.projects = [];
+
+  const project = board.projects.find(p => p.id === id);
+  if (project) {
+    if (name) project.name = name;
+    if (color) project.color = color;
+    boardModel.save(board);
+    res.json(project);
+  } else {
+    res.status(404).json({ error: 'Project not found' });
+  }
+});
+
+app.delete('/api/projects/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const board = boardModel.read();
+  if (!board.projects) board.projects = [];
+
+  board.projects = board.projects.filter(p => p.id !== id);
+
+  // Remove project reference from all tasks
+  board.columns.forEach(column => {
+    column.tasks.forEach(task => {
+      if (task.project === id) {
+        task.project = null;
+      }
+    });
+  });
 
   boardModel.save(board);
   res.json({ success: true });

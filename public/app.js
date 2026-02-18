@@ -9,6 +9,7 @@ let sortables = {
     columns: null
 };
 let searchText = '';
+let activeProjectFilter = 'all'; // 'all', 'none', or project id
 
 // Sound Manager (Auditory UI)
 const SoundManager = {
@@ -112,6 +113,13 @@ function setupEventListeners() {
         renderBoard();
     });
 
+    // Project Filter
+    document.getElementById('project-filter-select').addEventListener('change', (e) => {
+        activeProjectFilter = e.target.value;
+        e.target.classList.toggle('filter-active', activeProjectFilter !== 'all');
+        renderBoard();
+    });
+
     // Archive
     document.getElementById('show-archive-btn').addEventListener('click', openArchiveModal);
 
@@ -140,6 +148,7 @@ function setupEventListeners() {
             closeTaskModal();
             closeColumnModal();
             closeArchiveModal();
+            closeSettingsModal();
         }
     });
 
@@ -157,6 +166,10 @@ function setupEventListeners() {
 
     document.getElementById('column-modal').addEventListener('click', (e) => {
         if (e.target.id === 'column-modal') closeColumnModal();
+    });
+
+    document.getElementById('settings-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'settings-modal') closeSettingsModal();
     });
 }
 
@@ -209,6 +222,9 @@ async function loadBoard() {
     try {
         const response = await fetch('/api/board');
         boardData = await response.json();
+        if (!boardData.projects) boardData.projects = [];
+        populateProjectFilter();
+        populateTaskProjectSelector();
         renderBoard();
     } catch (error) {
         console.error('Failed to load board:', error);
@@ -222,16 +238,31 @@ function renderBoard() {
     initSortable();
 }
 
+function filterTasksBySearch(tasks) {
+    const query = searchText.toLowerCase().replace('#priority', '').replace('#project', '').trim();
+    return tasks.filter(task => {
+        // Text search
+        const matchesText = !query ||
+            task.title.toLowerCase().includes(query) ||
+            task.tags.some(tag => tag.toLowerCase().includes(query)) ||
+            task.description.toLowerCase().includes(query);
+
+        // Project filter
+        let matchesProject = true;
+        if (activeProjectFilter === 'none') {
+            matchesProject = !task.project;
+        } else if (activeProjectFilter !== 'all') {
+            matchesProject = task.project === activeProjectFilter;
+        }
+
+        return matchesText && matchesProject;
+    });
+}
+
 function renderBoardNormal() {
     const boardEl = document.getElementById('board');
     boardData.columns.forEach(column => {
-        const query = searchText.toLowerCase().replace('#priority', '').trim();
-        const filteredTasks = column.tasks.filter(task => {
-            const matchesTitle = task.title.toLowerCase().includes(query);
-            const matchesTags = task.tags.some(tag => tag.toLowerCase().includes(query));
-            const matchesDescription = task.description.toLowerCase().includes(query);
-            return matchesTitle || matchesTags || matchesDescription;
-        });
+        const filteredTasks = filterTasksBySearch(column.tasks);
 
         const columnEl = createColumnElement({ ...column, tasks: filteredTasks });
         if (column.wipLimit > 0 && filteredTasks.length > column.wipLimit) {
@@ -242,23 +273,25 @@ function renderBoardNormal() {
 }
 
 function renderSwimlanesIfNeeded() {
-    if (!searchText.includes('#priority')) {
+    if (searchText.includes('#priority')) {
+        renderSwimlanesByPriority();
+    } else if (searchText.includes('#project')) {
+        renderSwimlanesByProject();
+    } else {
         renderBoardNormal();
-        return;
     }
+}
 
-
+function renderSwimlanesByPriority() {
     const boardEl = document.getElementById('board');
     const priorities = ['high', 'medium', 'low'];
 
     priorities.forEach(priority => {
-        // Add Divider
         const divider = document.createElement('div');
         divider.className = 'swimlane-divider';
         divider.innerHTML = `<span class="swimlane-label">${getPriorityText(priority)}</span>`;
         boardEl.appendChild(divider);
 
-        // Add Row of columns for this priority
         const row = document.createElement('div');
         row.className = 'swimlane-row';
         row.style.display = 'flex';
@@ -266,17 +299,63 @@ function renderSwimlanesIfNeeded() {
         row.style.marginBottom = '40px';
 
         boardData.columns.forEach(column => {
-            const tasks = column.tasks.filter(t => t.priority === priority);
+            const tasks = filterTasksBySearch(column.tasks).filter(t => t.priority === priority);
             const columnEl = createColumnElement({ ...column, tasks });
-            // Disable task adding in swimlane view for simplicity
             const addTaskBtn = columnEl.querySelector('.add-task-btn');
-            if (addTaskBtn) {
-                addTaskBtn.style.display = 'none';
-            }
+            if (addTaskBtn) addTaskBtn.style.display = 'none';
             row.appendChild(columnEl);
         });
         boardEl.appendChild(row);
     });
+}
+
+function renderSwimlanesByProject() {
+    const boardEl = document.getElementById('board');
+    const projects = boardData.projects || [];
+
+    // Swimlane for each project
+    projects.forEach(project => {
+        const divider = document.createElement('div');
+        divider.className = 'swimlane-divider';
+        divider.innerHTML = `<span class="swimlane-label" style="color: ${project.color}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${project.color};margin-right:8px;"></span>${escapeHtml(project.name)}</span>`;
+        boardEl.appendChild(divider);
+
+        const row = document.createElement('div');
+        row.className = 'swimlane-row';
+        row.style.display = 'flex';
+        row.style.gap = '24px';
+        row.style.marginBottom = '40px';
+
+        boardData.columns.forEach(column => {
+            const tasks = filterTasksBySearch(column.tasks).filter(t => t.project === project.id);
+            const columnEl = createColumnElement({ ...column, tasks });
+            const addTaskBtn = columnEl.querySelector('.add-task-btn');
+            if (addTaskBtn) addTaskBtn.style.display = 'none';
+            row.appendChild(columnEl);
+        });
+        boardEl.appendChild(row);
+    });
+
+    // Swimlane for tasks without project
+    const divider = document.createElement('div');
+    divider.className = 'swimlane-divider';
+    divider.innerHTML = `<span class="swimlane-label">Без проекта</span>`;
+    boardEl.appendChild(divider);
+
+    const row = document.createElement('div');
+    row.className = 'swimlane-row';
+    row.style.display = 'flex';
+    row.style.gap = '24px';
+    row.style.marginBottom = '40px';
+
+    boardData.columns.forEach(column => {
+        const tasks = filterTasksBySearch(column.tasks).filter(t => !t.project);
+        const columnEl = createColumnElement({ ...column, tasks });
+        const addTaskBtn = columnEl.querySelector('.add-task-btn');
+        if (addTaskBtn) addTaskBtn.style.display = 'none';
+        row.appendChild(columnEl);
+    });
+    boardEl.appendChild(row);
 }
 
 function initSortable() {
@@ -454,7 +533,17 @@ function createTaskElement(task, columnId) {
     }
     depHtml += '</div>';
 
+    // Project badge
+    let projectBadgeHtml = '';
+    if (task.project && boardData.projects) {
+        const project = boardData.projects.find(p => p.id === task.project);
+        if (project) {
+            projectBadgeHtml = `<div class="project-badge" style="background: ${project.color}20; color: ${project.color};"><span class="project-dot" style="background: ${project.color};"></span>${escapeHtml(project.name)}</div>`;
+        }
+    }
+
     taskEl.innerHTML = `
+    ${projectBadgeHtml}
     <div class="task-header">
       <div class="task-title" onclick="openEditTaskModal('${task.id}', '${columnId}')">${escapeHtml(task.title)}</div>
       <div style="flex-shrink: 0; display: flex; gap: 8px; align-items: center;">
@@ -527,6 +616,7 @@ async function handleQuickTaskSubmit(e, columnId) {
 
 // Maintenance (Backup/Restore)
 function openSettingsModal() {
+    renderProjectsList();
     document.getElementById('settings-modal').classList.remove('hidden');
 }
 
@@ -678,9 +768,11 @@ function openAddTaskModal(columnId) {
     document.getElementById('task-tags').value = '';
     document.getElementById('task-deadline').value = '';
     document.getElementById('task-recurring').value = 'none';
+    document.getElementById('task-project').value = activeProjectFilter !== 'all' && activeProjectFilter !== 'none' ? activeProjectFilter : '';
     document.getElementById('subtasks-container').innerHTML = '';
     document.getElementById('task-links-container').innerHTML = '';
     populateLinkSelector(null);
+    populateTaskProjectSelector();
     document.getElementById('archive-task-btn').classList.add('hidden');
     document.getElementById('delete-task-btn').classList.add('hidden');
     document.getElementById('modal-history-btn').classList.add('hidden');
@@ -704,6 +796,8 @@ function openEditTaskModal(taskId, columnId) {
     document.getElementById('task-tags').value = task.tags ? task.tags.join(', ') : '';
     document.getElementById('task-deadline').value = task.deadline || '';
     document.getElementById('task-recurring').value = (task.recurring && task.recurring.frequency) || 'none';
+    populateTaskProjectSelector();
+    document.getElementById('task-project').value = task.project || '';
 
     renderTaskLinks();
     populateLinkSelector(taskId);
@@ -752,6 +846,8 @@ async function handleTaskSubmit(e) {
         };
     }).filter(st => st.title);
 
+    const project = document.getElementById('task-project').value || null;
+
     const taskData = {
         title,
         description,
@@ -759,6 +855,7 @@ async function handleTaskSubmit(e) {
         tags,
         deadline: deadline || null,
         subtasks,
+        project,
         recurring: {
             frequency: document.getElementById('task-recurring').value,
             lastRun: currentEditingTask ? (currentEditingTaskData?.recurring?.lastRun || null) : null
@@ -986,6 +1083,158 @@ function renderTaskLinks() {
         `;
         container.appendChild(item);
     });
+}
+
+// === Project Management ===
+
+function populateProjectFilter() {
+    const select = document.getElementById('project-filter-select');
+    const currentValue = select.value;
+    select.innerHTML = '<option value="all">Все проекты</option><option value="none">Без проекта</option>';
+
+    (boardData.projects || []).forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = project.name;
+        option.style.color = project.color;
+        select.appendChild(option);
+    });
+
+    select.value = currentValue;
+    select.classList.toggle('filter-active', select.value !== 'all');
+}
+
+function populateTaskProjectSelector() {
+    const select = document.getElementById('task-project');
+    if (!select) return;
+    select.innerHTML = '<option value="">Без проекта</option>';
+
+    (boardData.projects || []).forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = project.name;
+        option.style.color = project.color;
+        select.appendChild(option);
+    });
+}
+
+function renderProjectsList() {
+    const container = document.getElementById('projects-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const projects = boardData.projects || [];
+    if (projects.length === 0) {
+        container.innerHTML = '<p class="hint" style="text-align: left; margin: 0;">Проектов пока нет. Добавьте первый!</p>';
+        return;
+    }
+
+    projects.forEach(project => {
+        // Count tasks for this project
+        let taskCount = 0;
+        boardData.columns.forEach(col => {
+            taskCount += col.tasks.filter(t => t.project === project.id).length;
+        });
+
+        const item = document.createElement('div');
+        item.className = 'project-item';
+        item.innerHTML = `
+            <span class="project-color-dot" style="background: ${project.color}"></span>
+            <span class="project-name">${escapeHtml(project.name)}</span>
+            <span class="project-task-count">${taskCount} задач</span>
+            <div class="project-actions">
+                <button onclick="editProject('${project.id}')" title="Редактировать">✏️</button>
+                <button onclick="deleteProject('${project.id}')" title="Удалить">🗑️</button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+async function addProject() {
+    const nameInput = document.getElementById('new-project-name');
+    const colorInput = document.getElementById('new-project-color');
+    const name = nameInput.value.trim();
+    const color = colorInput.value;
+
+    if (!name) {
+        nameInput.focus();
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, color })
+        });
+
+        if (response.ok) {
+            nameInput.value = '';
+            colorInput.value = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+            await loadBoard();
+            renderProjectsList();
+        }
+    } catch (err) {
+        console.error('Failed to add project:', err);
+    }
+}
+
+async function editProject(projectId) {
+    const project = boardData.projects.find(p => p.id === projectId);
+    if (!project) return;
+
+    const newName = prompt('Новое название проекта:', project.name);
+    if (newName === null) return;
+    if (!newName.trim()) return;
+
+    const newColor = prompt('Новый цвет (HEX, например #818cf8):', project.color);
+    if (newColor === null) return;
+
+    try {
+        await fetch(`/api/projects/${projectId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName.trim(), color: newColor || project.color })
+        });
+        await loadBoard();
+        renderProjectsList();
+    } catch (err) {
+        console.error('Failed to edit project:', err);
+    }
+}
+
+async function deleteProject(projectId) {
+    const project = boardData.projects.find(p => p.id === projectId);
+    if (!project) return;
+
+    // Count tasks
+    let taskCount = 0;
+    boardData.columns.forEach(col => {
+        taskCount += col.tasks.filter(t => t.project === projectId).length;
+    });
+
+    const message = taskCount > 0
+        ? `Удалить проект "${project.name}"? У ${taskCount} задач будет убрана привязка к проекту.`
+        : `Удалить проект "${project.name}"?`;
+
+    if (!confirm(message)) return;
+
+    try {
+        await fetch(`/api/projects/${projectId}`, {
+            method: 'DELETE'
+        });
+
+        if (activeProjectFilter === projectId) {
+            activeProjectFilter = 'all';
+            document.getElementById('project-filter-select').value = 'all';
+        }
+
+        await loadBoard();
+        renderProjectsList();
+    } catch (err) {
+        console.error('Failed to delete project:', err);
+    }
 }
 
 // Initialize on load
