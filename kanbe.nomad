@@ -61,6 +61,8 @@ job "kanbe" {
         NODE_ENV       = "production"
         # SESSION_SECRET is ideally handled via template from Consul or Vault
         SESSION_SECRET = "kanban-secret-default" 
+        # INITIAL_PASSWORD is used to set the password on first run if config.json is missing
+        INITIAL_PASSWORD = "admin"
       }
 
       resources {

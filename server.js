@@ -70,7 +70,14 @@ app.use(session({
 
 // Initialize config file if needed
 if (!fs.existsSync(CONFIG_FILE)) {
-  logger.warn('No config file found. Please run install.sh or set a password manually in data/config.json');
+  if (process.env.INITIAL_PASSWORD) {
+    logger.info('No config file found. Generating from INITIAL_PASSWORD environment variable.');
+    const hash = bcrypt.hashSync(process.env.INITIAL_PASSWORD, 10);
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ passwordHash: hash }, null, 2));
+    logger.info('Config file created successfully.');
+  } else {
+    logger.warn('No config file found. Please run install.sh or set a password manually in data/config.json');
+  }
 }
 
 // Scheduled Tasks
