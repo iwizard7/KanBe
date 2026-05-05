@@ -5,6 +5,11 @@ job "kanbe" {
   group "web" {
     count = 1
 
+    constraint {
+      attribute = "${node.unique.name}"
+      value     = "sandbox" # ЗАМЕНИТЕ на имя вашей ноды из 'nomad node status'
+    }
+
     # Persistent storage using the host volume 'data' configured on the server
     volume "kanbe-storage" {
       type      = "host"
@@ -39,7 +44,7 @@ job "kanbe" {
       driver = "docker"
 
       config {
-        image = "0cff5d3eb390" # Используем Image ID напрямую
+        image = "kanbe:latest"
         ports = ["http"]
         force_pull = false
       }
