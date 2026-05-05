@@ -39,7 +39,7 @@ job "kanbe" {
       driver = "docker"
 
       config {
-        image = "kanbe:latest"
+        image = "0cff5d3eb390" # Используем Image ID напрямую
         ports = ["http"]
         force_pull = false
       }
