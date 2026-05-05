@@ -41,6 +41,7 @@ job "kanbe" {
       config {
         image = "kanbe:latest"
         ports = ["http"]
+        force_pull = false
       }
 
       volume_mount {
