@@ -44,7 +44,7 @@ job "kanbe" {
       driver = "docker"
 
       config {
-        image = "kanbe:latest"
+        image = "localhost/kanbe:latest"
         ports = ["http"]
         force_pull = false
       }
