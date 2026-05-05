@@ -91,6 +91,38 @@ chmod +x install.sh
 ./install.sh
 ```
 Скрипт сам установит зависимости, сгенерирует секретные ключи, настроит ваш пароль и создаст `.env` файл. Поддерживаются **Linux** и **macOS**.
+## Развертывание в Nomad
+
+Проект подготовлен для запуска в кластере **HashiCorp Nomad**.
+
+### Быстрый старт с Docker
+1. Соберите образ:
+   ```bash
+   docker build -t your-registry/kanbe:latest .
+   ```
+2. Отправьте его в ваш реестр:
+   ```bash
+   docker push your-registry/kanbe:latest
+   ```
+
+### Настройка в Nomad
+В корне проекта находится файл `kanbe.nomad`. Он настроен на использование **Host Volumes** для постоянного хранения данных.
+
+1. Убедитесь, что на ноде Nomad настроен том с именем `data` (например, в `/etc/nomad.d/client.hcl`):
+   ```hcl
+   client {
+     host_volume "data" {
+       path      = "/mnt/nomad-volumes"
+       read_only = false
+     }
+   }
+   ```
+2. Запустите задачу:
+   ```bash
+   nomad job run kanbe.nomad
+   ```
+
+Данные будут сохраняться в `/mnt/nomad-volumes/kanbe` (или по вашему пути), что гарантирует их сохранность при перезагрузке контейнеров.
 
 ## API Endpoints
 

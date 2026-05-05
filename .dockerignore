@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+data/*
+!data/board.json
+logs
+.git
+.env
+Dockerfile
+*.nomad
+.DS_Store
+image.png
+install.sh
+README.md
+.analysis_and_suggestions.md
