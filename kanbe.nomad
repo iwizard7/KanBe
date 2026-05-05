@@ -45,7 +45,7 @@ job "kanbe" {
       driver = "docker"
 
       config {
-        image = "sha256:0cff5d3eb3907a9f1497582d4f97ed3042388318d73d9b4cb94cac3c61dbf6d8"
+        image = "sha256:815c769de1e239705acbd852efbc1205937212b87943bfe12f9d8c585b07c251"
         ports = ["http"]
         force_pull = false
       }
