@@ -39,7 +39,7 @@ job "kanbe" {
       driver = "docker"
 
       config {
-        image = "iwizard7/kanbe:latest" # You can build and push this to Docker Hub
+        image = "kanbe:latest"
         ports = ["http"]
       }
 
