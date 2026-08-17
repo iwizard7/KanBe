@@ -18,17 +18,21 @@ const backupService = require('./src/services/backup.service');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 1);
+
 // Environment Validation
 if (!process.env.SESSION_SECRET) {
   logger.warn('⚠️ SESSION_SECRET is not set. Using insecure default. Please set it in .env file.');
 }
 
 // Data Directories
-const DATA_DIR = path.join(__dirname, 'data');
+const dataDirName = process.env.DATA_DIR_NAME || 'data';
+const DATA_DIR = path.join(__dirname, dataDirName);
 const SESSIONS_DIR = path.join(DATA_DIR, 'sessions');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 
-if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR);
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR, { recursive: true });
 
 // Persistent session storage
 const FileStore = require('session-file-store')(session);
@@ -62,7 +66,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     maxAge: 24 * 60 * 60 * 1000,
-    secure: process.env.USE_SECURE_COOKIES === 'true', // Set to 'true' only if using HTTPS
+    secure: process.env.NODE_ENV === 'production', // Set to 'true' in production
     httpOnly: true,
     sameSite: 'lax'
   }
@@ -606,7 +610,11 @@ app.delete('/api/projects/:id', requireAuth, (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  logger.info(`Kanban server running on http://localhost:${PORT}`);
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    logger.info(`Kanban server running on http://localhost:${PORT}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+}
+
+module.exports = app;

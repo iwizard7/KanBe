@@ -2,11 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const dataDirName = process.env.DATA_DIR_NAME || 'data';
+const DATA_DIR = path.join(process.cwd(), dataDirName);
 const BOARD_FILE = path.join(DATA_DIR, 'board.json');
 
 // Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // Initialize board file if not exists
 if (!fs.existsSync(BOARD_FILE)) {
